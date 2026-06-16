@@ -16,6 +16,7 @@ const raceRooms = {};
 io.on('connection', (socket) => {
     console.log(`⚡ Racer Terhubung: ${socket.id}`);
 
+    // 1. MEMBUAT ROOM BARU
     socket.on('createRoom', ({ playerName }) => {
         const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
         raceRooms[roomId] = {
@@ -31,7 +32,15 @@ io.on('connection', (socket) => {
                 punctuation: true
             },
             players: {
-                [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", isPlayer: true, currentWpm: 0, progressPercent: 0, isFinished: false }
+                [socket.id]: { 
+                    id: socket.id, 
+                    name: playerName || "Host_Racer", 
+                    carEmoji: "🚗", 
+                    isPlayer: true, 
+                    currentWpm: 0, 
+                    progressPercent: 0, 
+                    isFinished: false 
+                }
             },
             results: []
         };
@@ -40,13 +49,25 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomData', raceRooms[roomId]);
     });
 
+    // 2. JOIN KE ROOM YANG SUDAH ADA
     socket.on('joinRoom', ({ roomId, playerName }) => {
         const room = raceRooms[roomId];
         if (!room) {
             socket.emit('errorMsg', "❌ Kode Room tidak ditemukan, Bos!");
             return;
         }
-        room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", isPlayer: true, currentWpm: 0, progressPercent: 0, isFinished: false };
+        
+        // carEmoji diset default awal, nanti akan di-sync via updateCar dari frontend
+        room.players[socket.id] = { 
+            id: socket.id, 
+            name: playerName || "Guest_Racer", 
+            carEmoji: "🏎️", 
+            isPlayer: true, 
+            currentWpm: 0, 
+            progressPercent: 0, 
+            isFinished: false 
+        };
+        
         socket.join(roomId);
         socket.emit('joinSuccess', { roomId, isHost: false });
         socket.emit('settingsUpdated', room.settings);
@@ -58,6 +79,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 3. KICK PLAYER (HANYA UNTUK HOST)
     socket.on('kickPlayer', ({ roomId, targetPlayerId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id && room.players[targetPlayerId]) {
@@ -71,6 +93,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 4. TOGGLE BUKA/TUTUP PANEL PENGATURAN
     socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -79,6 +102,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 5. UPDATE SETTINGS GAME (MODE, KATA, DLL)
     socket.on('updateSettings', ({ roomId, settings }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -87,6 +111,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 6. UPDATE KUSTOMISASI MOBIL PLAYER
     socket.on('updateCar', ({ roomId, carEmoji }) => {
         const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
@@ -95,6 +120,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 7. START GAME COUNTDOWN
     socket.on('triggerStart', ({ roomId, wordsList }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -109,6 +135,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 8. REPLAY MATCH
     socket.on('requestMatchReplay', ({ roomId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -124,13 +151,16 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 9. EVENT LIVE CHAT (FIXED: SEKARANG WIRE EMIT SENDER ID UNTUK BUBBLE ANIMATION)
     socket.on('sendChatMessage', ({ roomId, sender, text }) => {
         const room = raceRooms[roomId];
         if (room) {
-            io.to(roomId).emit('incomingChatMessage', { sender, text });
+            // Kita parsing socket.id sebagai senderId agar UI tau mobil mana yang memunculkan bubble
+            io.to(roomId).emit('incomingChatMessage', { sender, text, senderId: socket.id });
         }
     });
 
+    // 10. LIVE UPDATE PROGRESS TRACK & WPM
     socket.on('updateProgress', ({ roomId, progressPercent, currentWpm }) => {
         const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
@@ -140,6 +170,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 11. SUBMIT DATA SELESAI BALAPAN (MASUK PODIUM)
     socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
         const room = raceRooms[roomId];
         if (room) {
@@ -154,6 +185,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 12. DISCONNECT HANDLING
     socket.on('disconnect', () => {
         Object.keys(raceRooms).forEach((roomId) => {
             const room = raceRooms[roomId];
