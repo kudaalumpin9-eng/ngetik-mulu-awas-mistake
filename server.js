@@ -73,7 +73,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // PERBAIKAN: SUBMIT DATA FINAL DENGAN EMOJI
     socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
         const room = raceRooms[roomId];
         if (room) {
@@ -93,6 +92,14 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('roomData', room);
         }
     });
+
+    // --- FITUR CHAT DITAMBAHKAN DI SINI ---
+    socket.on('sendChatMessage', ({ roomId, sender, text, senderId }) => {
+        if (raceRooms[roomId]) {
+            io.to(roomId).emit('incomingChatMessage', { sender, text, senderId });
+        }
+    });
+    // --------------------------------------
 
     socket.on('disconnect', () => {
         Object.keys(raceRooms).forEach((roomId) => {
