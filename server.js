@@ -17,12 +17,11 @@ io.on('connection', (socket) => {
     socket.on('updateStatus', ({ roomId, status }) => {
         const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
-            room.players[socket.id].isOnline = status; // status: 'online' atau 'offline'
+            room.players[socket.id].isOnline = status;
             io.to(roomId).emit('roomData', room);
         }
     });
 
-    // Request Reset dari Host
     socket.on('requestReset', ({ roomId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -32,9 +31,9 @@ io.on('connection', (socket) => {
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
             });
-            io.to(roomId).emit('performReset'); // Perintah semua orang untuk kembali ke garis start
-            io.to(roomId).emit('roomData', room); // Update UI lintasan mabar ke status 0%
-            io.to(roomId).emit('receiveFinalData', []); // Bersihkan data pemenang race sebelumnya
+            io.to(roomId).emit('performReset'); 
+            io.to(roomId).emit('roomData', room); 
+            io.to(roomId).emit('receiveFinalData', []); 
         }
     });
     console.log(`⚡ Racer Terhubung: ${socket.id}`);
@@ -44,7 +43,7 @@ io.on('connection', (socket) => {
         raceRooms[roomId] = {
             id: roomId,
             hostId: socket.id,
-            isTableOpen: true,
+            isTableOpen: true, // Status awal table terbuka
             settings: { gameMode: 'words', wordTarget: 25, timeSelect: '60', difficulty: 'easy', punctuation: true },
             players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false } },
             results: []
@@ -62,8 +61,18 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.emit('joinSuccess', { roomId, isHost: false });
         socket.emit('settingsUpdated', room.settings);
+        // Kirim status buka/tutup table yang sedang aktif di room ke player yang baru join
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
+    });
+
+    // Handle aksi buka/tutup tabel pengaturan oleh host untuk disebarkan ke semua player
+    socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.isTableOpen = isOpen; // Simpan state terbaru di server
+            socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); // Siarkan ke seluruh guest
+        }
     });
 
     socket.on('updateSettings', ({ roomId, settings }) => {
@@ -103,7 +112,7 @@ io.on('connection', (socket) => {
             room.results.push({ name, wpm, isPlayer, emoji });
             if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
             room.results.sort((a, b) => b.wpm - a.wpm);
-            io.to(roomId).emit('receiveFinalData', room.results);
+            io.to(roomId).emit('receiveFinalData', room.results); // Mengirim seluruh data hasil pemenang (termasuk juara 2 & 3)
         }
     });
 
@@ -116,13 +125,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- FITUR CHAT DITAMBAHKAN DI SINI ---
     socket.on('sendChatMessage', ({ roomId, sender, text, senderId }) => {
         if (raceRooms[roomId]) {
             io.to(roomId).emit('incomingChatMessage', { sender, text, senderId });
         }
     });
-    // --------------------------------------
 
     socket.on('disconnect', () => {
         Object.keys(raceRooms).forEach((roomId) => {
