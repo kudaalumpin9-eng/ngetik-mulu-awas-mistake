@@ -526,9 +526,7 @@
                 document.getElementById('view-scores-btn').style.display = 'block'; 
             });
 
-            /* PERBAIKAN UTAMA: Menggabungkan logic chat ke satu handler agar tidak konflik */
             socket.on('incomingChatMessage', ({ sender, text, senderId }) => {
-                // 1. Masukkan ke log Chat Box
                 const chatContainer = document.getElementById('chat-messages-target');
                 const msgNode = document.createElement('div');
                 msgNode.className = "chat-msg-item";
@@ -536,7 +534,6 @@
                 chatContainer.appendChild(msgNode);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
 
-                // 2. Tampilkan Bubble Chat di atas Mobil Track Balap
                 const targetBubbleId = (socket.id === senderId) ? "bubble-player" : `bubble-${senderId}`;
                 triggerTrackBubbleAnim(targetBubbleId, text);
             });
@@ -553,12 +550,16 @@
             socket.on('errorMsg', (msg) => { alert(msg); leaveRoomAction(); });
 
             socket.on('performReset', () => {
+                clearMatchStateData();
+                document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
                 document.querySelectorAll('.car-node-wrapper').forEach(el => el.style.left = "0%");
-                const btn = document.getElementById('start-btn');
-                btn.innerText = "Mulai Balapan";
-                btn.onclick = startGameCountdown; 
-                btn.style.display = "block";
-                document.getElementById('replay-btn').style.display = "none";
+                if (isServerHost) {
+                    const btn = document.getElementById('start-btn');
+                    btn.innerText = "Mulai Balapan";
+                    btn.onclick = startGameCountdown; 
+                    btn.style.display = "inline-block";
+                    document.getElementById('replay-btn').style.display = "none";
+                }
             });
         }
 
@@ -826,6 +827,11 @@
             if (document.getElementById('player-wpm')) document.getElementById('player-wpm').innerText = "0";
             if (document.getElementById('wrapper-player')) document.getElementById('wrapper-player').style.left = "0%";
             
+            if (isServerHost) {
+                document.getElementById('start-btn').style.display = 'inline-block';
+                document.getElementById('replay-btn').style.display = 'none';
+            }
+
             document.getElementById('light-r').className = "light";
             document.getElementById('light-y').className = "light";
             document.getElementById('light-g').className = "light";
@@ -881,11 +887,16 @@
         function requestReplayAction() {
             if (isOnlineMode) {
                 if (!isServerHost) return;
-                socket.emit('requestMatchReplay', { roomId: currentOnlineRoomId });
-                setTimeout(() => { startGameCountdown(); }, 400);
+                socket.emit('requestReset', { roomId: currentOnlineRoomId });
             } else {
                 clearMatchStateData();
-                startGameCountdown();
+                document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
+                activeBots.forEach(b => {
+                    b.progressPercent = 0;
+                    b.currentWpm = 0;
+                    if(document.getElementById(`wrapper-${b.id}`)) document.getElementById(`wrapper-${b.id}`).style.left = "0%";
+                    if(document.getElementById(`${b.id}-wpm`)) document.getElementById(`${b.id}-wpm`).innerText = "0";
+                });
             }
         }
 
@@ -955,6 +966,9 @@
             const input = document.getElementById('input-box');
             input.disabled = false; input.value = ""; input.className = ""; input.placeholder = "Ketik disini..."; input.focus(); 
 
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('replay-btn').style.display = 'none';
+
             loopInterval = setInterval(() => {
                 let timePassedSeconds = (Date.now() - startTime) / 1000;
                 if (timePassedSeconds < 0.2) return;
@@ -996,7 +1010,10 @@
                     clearInterval(loopInterval);
                     gameActive = false;
                     document.getElementById('input-box').disabled = true;
-                    if (isServerHost) document.getElementById('replay-btn').style.display = 'inline-block';
+                    if (isServerHost) {
+                        document.getElementById('start-btn').style.display = 'none';
+                        document.getElementById('replay-btn').style.display = 'inline-block';
+                    }
                 }
             }, 100);
         }
