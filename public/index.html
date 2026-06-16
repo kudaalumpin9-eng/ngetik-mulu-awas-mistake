@@ -3,1063 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Typing Race - Grand Championship V5</title>
+    <title>NGETIK MULU AWAS MISTAKE</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Load library Socket.io otomatis dari server -->
     <script src="/socket.io/socket.io.js"></script>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent-color: #38bdf8;
-            --text-main: #f8fafc;
-            --text-muted: #64748b;
-            --correct-color: #4ade80;
-            --wrong-color: #f87171;
-            --gold: #f59e0b;
-            --silver: #cbd5e1;
-            --bronze: #b45309;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            color: var(--accent-color);
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-            margin-bottom: 10px;
-        }
-
-        /* --- GATEWAY LOBBY PANEL --- */
-        .lobby-panel {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        .lobby-input {
-            width: 85%;
-            padding: 12px;
-            margin: 10px 0;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            border: 1px solid var(--text-muted);
-            border-radius: 6px;
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        .lobby-btn-group {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-        }
-
-        /* --- CONTROL PANEL --- */
-        .control-panel {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            width: 100%;
-            max-width: 850px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-        }
-
-        .settings-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .settings-table td {
-            padding: 8px;
-            vertical-align: middle;
-        }
-
-        .settings-table td:first-child {
-            font-weight: 600;
-            color: var(--accent-color);
-            width: 30%;
-        }
-
-        select, input[type="number"], input[type="checkbox"] {
-            padding: 8px 12px;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            border: 1px solid var(--text-muted);
-            border-radius: 6px;
-            outline: none;
-        }
-
-        /* --- COUNTDOWN TRAFFIC LIGHT --- */
-        .countdown-box {
-            display: none;
-            background: #000;
-            border: 3px solid #334155;
-            border-radius: 8px;
-            padding: 10px 20px;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 15px;
-            width: fit-content;
-        }
-        .lights {
-            display: flex;
-            gap: 10px;
-        }
-        .light {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #222;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
-        }
-        .light.red { background-color: #ef4444; box-shadow: 0 0 15px #ef4444; }
-        .light.yellow { background-color: #eab308; box-shadow: 0 0 15px #eab308; }
-        .light.green { background-color: #22c55e; box-shadow: 0 0 15px #22c55e; }
-        .countdown-text {
-            color: #fff;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        .countdown-timer {
-            color: #fff;
-            font-size: 1.8rem;
-            font-weight: bold;
-            font-family: monospace;
-        }
-
-        /* --- LINTASAN BALAP --- */
-        .track-container {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            width: 100%;
-            max-width: 850px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-
-        .track-lanes-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .track-lane {
-            height: 75px;
-            border-bottom: 2px dashed var(--text-muted);
-            position: relative;
-            display: flex;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        
-        .track-lane:last-child {
-            border-bottom: none;
-        }
-
-        .lane-info {
-            position: absolute;
-            left: 10px;
-            top: 5px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            z-index: 2;
-            display: flex;
-            gap: 15px;
-        }
-
-        .lane-info .wpm-counter {
-            color: var(--accent-color);
-            font-weight: bold;
-        }
-
-        .car {
-            font-size: 45px;
-            position: absolute;
-            left: 0;
-            transition: left 0.1s linear;
-            transform: scaleX(-1); 
-            width: 60px;
-            text-align: center;
-            z-index: 5;
-        }
-
-        .status-display {
-            display: flex;
-            justify-content: space-between;
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            border-bottom: 1px solid var(--text-muted);
-            padding-bottom: 10px;
-        }
-
-        .room-badge {
-            background-color: #3b82f6;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        /* --- DISPLAY TEKS --- */
-        .text-display {
-            background-color: var(--bg-color);
-            border-radius: 8px;
-            padding: 20px;
-            font-size: 1.3rem;
-            line-height: 1.8;
-            margin-bottom: 25px;
-            text-align: left;
-            max-height: 250px;
-            overflow-y: auto;
-            word-wrap: break-word;
-        }
-
-        .word {
-            display: inline-block; 
-            position: relative;
-            padding: 2px 4px;
-            margin: 0 2px;
-            border-radius: 4px;
-            color: var(--text-muted);
-            white-space: nowrap; 
-        }
-
-        .word.current {
-            color: var(--text-main);
-            background-color: rgba(56, 189, 248, 0.2);
-            box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
-        }
-
-        .word.current.error {
-            background-color: rgba(248, 113, 113, 0.3);
-            box-shadow: 0 0 8px var(--wrong-color);
-            color: #fff;
-        }
-
-        .word.completed {
-            color: var(--correct-color);
-        }
-
-        /* --- BUTTONS & INPUT --- */
-        .action-area {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 100%;
-            max-width: 850px;
-        }
-
-        .input-container {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        #input-box {
-            flex: 1;
-            padding: 15px 20px;
-            font-size: 1.3rem;
-            background-color: var(--card-bg);
-            color: var(--text-main);
-            border: 2px solid var(--text-muted);
-            border-radius: 8px;
-            outline: none;
-        }
-
-        #input-box.input-error {
-            border-color: var(--wrong-color);
-            background-color: rgba(248, 113, 113, 0.05);
-        }
-
-        .btn {
-            padding: 12px 20px;
-            font-size: 0.95rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-        }
-
-        .btn:active { transform: scale(0.95); }
-        .btn:disabled { background-color: var(--text-muted); cursor: not-allowed; opacity: 0.4; }
-        .btn-primary { background-color: var(--accent-color); color: var(--bg-color); }
-        .btn-success { background-color: var(--correct-color); color: var(--bg-color); }
-        .btn-danger { background-color: var(--wrong-color); color: #fff; }
-        .btn-secondary { background-color: #475569; color: #fff; }
-
-        .role-badge { padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
-        .role-join { background-color: rgba(74, 222, 128, 0.2); color: var(--correct-color); }
-        .role-watch { background-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-
-        /* --- POPUP PODIUM FINAL --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-
-        .tournament-results {
-            background-color: var(--card-bg);
-            padding: 30px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 650px;
-            text-align: center;
-            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
-            transform: scale(0.8);
-            transition: transform 0.4s ease;
-        }
-        .modal-overlay.active .tournament-results { transform: scale(1); }
-
-        .podium-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 15px;
-            margin: 25px 0;
-            height: 180px;
-        }
-
-        .podium-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 120px;
-            border-radius: 8px 8px 0 0;
-            font-weight: bold;
-            color: #000;
-            justify-content: flex-end;
-            padding-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            opacity: 0;
-            transition: all 0.5s ease;
-        }
-
-        .modal-overlay.active .podium-step { opacity: 1; }
-
-        .podium-step.rank-1 { height: 140px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
-        .podium-step.rank-2 { height: 100px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
-        .podium-step.rank-3 { height: 70px; background: linear-gradient(135deg, #b45309, #78350f); color: white; }
-
-        .podium-name { font-size: 0.85rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 110px; text-align: center; font-weight: bold; }
-        .podium-wpm { font-size: 0.8rem; opacity: 0.9; margin-bottom: 5px; }
-
-        .stats-grid-container {
-            background-color: rgba(15, 23, 42, 0.6);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: left;
-            border: 1px solid var(--text-muted);
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 5px;
-            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
-            font-size: 1.1rem;
-        }
-        .stat-row:last-child { border-bottom: none; }
-        .stat-label { color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
-        .stat-val { font-weight: bold; color: var(--accent-color); }
-    </style>
 </head>
 <body>
 
-    <h1>🏎️ NGETIK MULU AWAS MISTAKE 🏎️ </h1>
+    <h1>🏎️ NGETIK MULU AWAS MISTAKE</h1>
 
-    <div class="lobby-panel" id="lobby-panel">
-        <h3 style="color: var(--accent-color); margin-top:0;">🏁 Masuk Sirkuit Balap 🏁</h3>
-        <input type="text" id="nickname-input" class="lobby-input" placeholder="Masukkan Nickname Lo..." maxlength="12">
+    <div class="game-container">
+        <!-- Setup Menu Mabar -->
+        <div class="setup-area">
+            <input type="text" id="nameInput" placeholder="Masukkan Nickname Lo...">
+            <input type="text" id="roomInput" placeholder="Kode Room (Kosongkan jika ingin buat baru)">
+            <button id="createBtn">Buat Room</button>
+            <button id="joinBtn">Join Mabar</button>
+        </div>
+
+        <!-- Teks Yang Harus Diketik -->
+        <div class="typing-box" id="textChallenge">Loading teks balapan...</div>
         
-        <div style="margin: 15px 0; border-top: 1px dashed var(--text-muted); padding-top: 15px;">
-            <button class="btn btn-success" style="width: 90%;" onclick="startSinglePlayerMode()">Main Solo + Bot Lawan 🤖</button>
-        </div>
+        <!-- Input Ketikan -->
+        <textarea id="typingArea" placeholder="Mulai mengetik di sini ketika room sudah siap..." disabled></textarea>
 
-        <div style="border-top: 1px dashed var(--text-muted); padding-top: 15px;">
-            <button class="btn btn-primary" style="width: 90%; margin-bottom: 10px;" onclick="createNewOnlineRoom()">Buat Kamar Mabar Baru 🌐</button>
-            <br>
-            <input type="text" id="roomcode-input" class="lobby-input" placeholder="Masukkan KODE ROOM Mabar..." style="width: 50%; text-transform: uppercase;">
-            <button class="btn btn-secondary" onclick="joinOnlineRoom()">Join Kamar</button>
-        </div>
-    </div>
-
-    <div id="main-arena" style="display: none; width: 100%; max-width: 850px;">
-        <div class="control-panel">
-            <table class="settings-table">
-                <tr>
-                    <td>Mode Game</td>
-                    <td>
-                        <select id="game-mode" onchange="toggleModeSettings(); broadcastSettings();">
-                            <option value="time">Mode 1: Berdasarkan Waktu</option>
-                            <option value="words" selected>Mode 2: Berdasarkan Jumlah Kata</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr id="row-duration" style="display: none;">
-                    <td>Durasi Waktu</td>
-                    <td>
-                        <select id="time-select" onchange="broadcastSettings()">
-                            <option value="30">30 Detik</option>
-                            <option value="60" selected>1 Menit</option>
-                            <option value="120">2 Menit</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr id="row-word-count">
-                    <td>Target Jumlah Kata</td>
-                    <td>
-                        <input type="number" id="word-target-input" value="25" min="25" max="200" style="width: 80px;" oninput="broadcastSettings()">
-                        <span style="font-size: 0.85rem; color: var(--text-muted);"> (Min: 25 kata)</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Tingkat Kesusahan Kata</td>
-                    <td>
-                        <select id="difficulty-select" onchange="broadcastSettings()">
-                            <option value="easy" selected>Mudah (Kata Pendek Standar)</option>
-                            <option value="hard">Sulit (Kata Panjang & Simbol)</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Jumlah Baris (Tampilan)</td>
-                    <td>
-                        <select id="rows-select" onchange="broadcastSettings()">
-                            <option value="1">1 Baris</option>
-                            <option value="2" selected>2 Baris</option>
-                            <option value="3">3 Baris</option>
-                            <option value="5">5 Baris</option>
-                            <option value="10">10 Baris</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Kustomisasi Mobil Kamu</td>
-                    <td>
-                        <select id="car-select" onchange="changeCar()">
-                            <option value="🚗">🚗 Mobil Merah</option>
-                            <option value="🏎️">🏎️ Mobil F1</option>
-                            <option value="🚓">🚓 Mobil Polisi</option>
-                            <option value="🚀">🚀 Roket Gede</option>
-                            <option value="🛸">🛸 UFO🛸</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr id="bot-management-row">
-                    <td>Manajemen Bot Lawan</td>
-                    <td>
-                        <button id="add-bot-btn" class="btn btn-secondary" onclick="addBot()" style="padding: 5px 12px; font-size: 0.85rem;">+ Tambah Bot</button>
-                        <button id="remove-bot-btn" class="btn btn-danger" onclick="removeBot()" style="padding: 5px 12px; font-size: 0.85rem;">🗑️ Hapus Bot</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Format Teks Tambahan</td>
-                    <td>
-                        <label><input type="checkbox" id="use-punctuation" checked onchange="broadcastSettings()"> Otomatis Kapital & Tanda Baca Tambahan</label>
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="countdown-box" id="countdown-box">
-            <div class="lights">
-                <div class="light" id="light-r"></div>
-                <div class="light" id="light-y"></div>
-                <div class="light" id="light-g"></div>
-            </div>
-            <div class="countdown-text" id="countdown-text">Get ready to race!</div>
-            <div class="countdown-timer" id="countdown-number">:05</div>
-        </div>
-
-        <div class="track-container">
-            <div class="status-display">
-                <div>Status: <span id="role-text" class="role-badge role-join">PLAYER (JOINED)</span></div>
-                <div id="room-id-badge" style="display:none;">ROOM ID: <span id="room-code-txt" class="room-badge">-</span> <button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="copyRoomShareLink()">Salin Link Mabar 🔗</button></div>
-                <div id="game-indicator">Siap Berkompetisi...</div>
-            </div>
-            
-            <div class="track-lanes-wrapper" id="lanes-container">
-                <div class="track-lane" id="lane-player">
-                    <div class="lane-info">
-                        <span id="lane-player-title">Kamu (Racer)</span>
-                        <span class="wpm-counter">WPM: <span id="player-wpm">0</span></span>
-                    </div>
-                    <div id="my-car" class="car">🚗</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="track-container">
-            <div class="text-display" id="words-wrapper">
-                Menunggu host memulai pertandingan...
-            </div>
-        </div>
-
-        <div class="action-area">
-            <div class="input-container">
-                <button id="join-btn" class="btn btn-success" onclick="setRole(true)" disabled>Join Balapan</button>
-                <button id="watch-btn" class="btn btn-primary" onclick="setRole(false)">Nonton Saja</button>
-                <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu Balapan Dimulai...">
-                <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
-                <button id="replay-btn" class="btn btn-danger" onclick="resetGame()" style="display: none;">Ulang / Replay 🔄</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="results-modal">
-        <div class="tournament-results">
-            <h2>🏆 HASIL AKHIR TOURNAMENT 🏆</h2>
-            <div class="podium-container">
-                <div class="podium-step rank-2">
-                    <div class="podium-name" id="p2-name">-</div>
-                    <div class="podium-wpm" id="p2-wpm">-</div>
-                    <div>2nd</div>
-                </div>
-                <div class="podium-step rank-1">
-                    <div class="podium-name" id="p1-name">-</div>
-                    <div class="podium-wpm" id="p1-wpm">-</div>
-                    <div>1st 👑</div>
-                </div>
-                <div class="podium-step rank-3">
-                    <div class="podium-name" id="p3-name">-</div>
-                    <div class="podium-wpm" id="p3-wpm">-</div>
-                    <div>3rd</div>
-                </div>
-            </div>
-
-            <div class="stats-grid-container">
-                <h3 style="margin-top: 0; color: var(--accent-color); text-align: center;">📊 Statistik Ketikan Kamu</h3>
-                <div class="stat-row">
-                    <div class="stat-label">⌨️ Your Speed:</div>
-                    <div class="stat-val" id="stat-speed">0 cpm / 0 wpm</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">🕒 Time:</div>
-                    <div class="stat-val" id="stat-time">0:00</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">✔️ Accuracy:</div>
-                    <div class="stat-val" id="stat-accuracy">0%</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">🏆 Points:</div>
-                    <div class="stat-val" id="stat-points">0</div>
-                </div>
-            </div>
-            <br>
-            <button class="btn btn-primary" onclick="closeModal()">Tutup & Evaluasi</button>
+        <!-- Sirkuit Balapan Lintas Player -->
+        <div id="sirkuit-balapan">
+            <p style="color: #64748b; text-align: center;">Belum masuk room. Buat atau Join room dulu buat mabar!</p>
         </div>
     </div>
 
     <script>
-        const easyWords = ["dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "bisa", "fokus", "juara", "kunci", "sukses", "langit", "bumi", "malam", "hari", "maju"];
-        const hardWords = ["implementasi", "karakteristik", "sinkronisasi", "kontekstual", "infrastruktur", "kompleksitas", "fundamental", "konsekuensi", "asimetris", "metodologi", "jurisdiksi", "transformasional", "ekstraksi", "kontemporer", "fleksibilitas", "algoritma-X", "sistem_informasi", "data_2026", "amplitudo", "revolusioner", "ekosistem", "spesifikasi", "fluktuasi", "kuantifikasi"];
+        const socket = io();
+        let currentRoomId = null;
+        let myPlayerName = "";
+        let targetText = "Kecepatan jemari menentukan siapa raja jalanan di sirkuit digital ini.";
+        let lastEmitTime = 0;
+        const EMIT_INTERVAL = 100; // Anti-lag pengiriman paket data
 
-        const botNames = ["Speedy_Bot", "TypeMaster_AI", "Cyber_Finger", "Turbo_Mech", "Flash_Keyboard"];
-        const botEmojis = ["🏎️", "🚓", "🚕", "🛸", "🚀"];
+        // Tampilkan teks tantangan awal
+        document.getElementById('textChallenge').innerText = targetText;
 
-        let socket;
-        let isOnlineMode = false;
-        let isServerHost = true;
-        let currentOnlineRoomId = "";
+        const createBtn = document.getElementById('createBtn');
+        const joinBtn = document.getElementById('joinBtn');
+        const roomInput = document.getElementById('roomInput');
+        const nameInput = document.getElementById('nameInput');
+        const typingArea = document.getElementById('typingArea');
+        const track = document.getElementById('sirkuit-balapan');
 
-        let wordsList = [];
-        let currentWordIndex = 0;
-        let totalWordsInBatch = 0;
-        let totalWordsTypedCorrectly = 0;
-        
-        let totalKeystrokes = 0;
-        let correctKeystrokes = 0;
-
-        let startTime = null;
-        let gameActive = false;
-        let isPlayerJoined = true;
-        let loopInterval;
-
-        let finishedRacersData = [];
-
-        let activeBots = [
-            { id: 'bot_0', name: 'Speedy_Bot', emoji: '🏎️', baseWpm: 48, currentWpm: 0, typedWords: 0, isFinished: false, progressPercent: 0 }
-        ];
-
-        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0 };
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rCode = urlParams.get('room');
-            if (rCode) {
-                document.getElementById('roomcode-input').value = rCode.toUpperCase();
-            }
+        // Event Buat Room
+        createBtn.addEventListener('click', () => {
+            myPlayerName = nameInput.value.trim() || "Driver_" + Math.floor(Math.random() * 1000);
+            currentRoomId = roomInput.value.trim() || Math.random().toString(36).substring(2, 7).toUpperCase();
+            socket.emit('create-room', currentRoomId, myPlayerName);
         });
 
-        window.onload = function() {
-            renderLanes();
-        };
+        // Event Join Room
+        joinBtn.addEventListener('click', () => {
+            myPlayerName = nameInput.value.trim() || "Driver_" + Math.floor(Math.random() * 1000);
+            currentRoomId = roomInput.value.trim().toUpperCase();
+            if (!currentRoomId) return alert("Masukkan Kode Room target mabar lo!");
+            socket.emit('join-room', currentRoomId, myPlayerName);
+        });
 
-        function initSocketConnection() {
-            socket = io();
-
-            socket.on('joinSuccess', ({ roomId, isHost }) => {
-                isOnlineMode = true;
-                isServerHost = isHost;
-                currentOnlineRoomId = roomId;
-
-                document.getElementById('lobby-panel').style.display = 'none';
-                document.getElementById('main-arena').style.display = 'block';
-                document.getElementById('room-id-badge').style.display = 'block';
-                document.getElementById('room-code-txt').innerText = roomId;
-
-                if(!isServerHost) {
-                    document.getElementById('game-mode').disabled = true;
-                    document.getElementById('time-select').disabled = true;
-                    document.getElementById('word-target-input').disabled = true;
-                    document.getElementById('difficulty-select').disabled = true;
-                    document.getElementById('rows-select').disabled = true;
-                    document.getElementById('use-punctuation').disabled = true;
-                    document.getElementById('bot-management-row').style.display = 'none';
-                    document.getElementById('start-btn').style.display = 'none';
-                    activeBots = []; 
-                    renderLanes();
-                }
-            });
-
-            socket.on('roomData', (roomObject) => {
-                const container = document.getElementById('lanes-container');
-                container.innerHTML = ""; 
-
-                const myLane = document.createElement('div');
-                myLane.className = 'track-lane';
-                myLane.style.display = isPlayerJoined ? "flex" : "none";
-                myLane.innerHTML = `
-                    <div class="lane-info">
-                        <span>${playerData.name} (Kamu) ${document.getElementById('car-select').value}</span>
-                        <span class="wpm-counter">WPM: <span id="player-wpm">${playerData.currentWpm}</span></span>
-                    </div>
-                    <div id="my-car" class="car" style="left: ${playerData.progressPercent}%;">${document.getElementById('car-select').value}</div>
-                `;
-                container.appendChild(myLane);
-
-                Object.values(roomObject.players).forEach((p) => {
-                    if(p.id !== socket.id) {
-                        const lane = document.createElement('div');
-                        lane.className = 'track-lane';
-                        lane.innerHTML = `
-                            <div class="lane-info">
-                                <span>${p.name} 🏎️</span>
-                                <span class="wpm-counter">WPM: <span>${p.currentWpm}</span></span>
-                            </div>
-                            <div class="car" style="left: ${p.progressPercent}%;">🏎️</div>
-                        `;
-                        container.appendChild(lane);
-                    }
-                });
-
-                activeBots.forEach((bot) => {
-                    const lane = document.createElement('div');
-                    lane.className = 'track-lane';
-                    lane.innerHTML = `
-                        <div class="lane-info">
-                            <span>${bot.name} ${bot.emoji}</span>
-                            <span class="wpm-counter">WPM: <span>${bot.currentWpm}</span></span>
-                        </div>
-                        <div class="car" style="left: ${bot.progressPercent}%;">${bot.emoji}</div>
-                    `;
-                    container.appendChild(lane);
-                });
-            });
-
-            socket.on('settingsUpdated', (settings) => {
-                document.getElementById('game-mode').value = settings.gameMode;
-                document.getElementById('word-target-input').value = settings.wordTarget;
-                document.getElementById('time-select').value = settings.timeSelect;
-                document.getElementById('difficulty-select').value = settings.difficulty;
-                document.getElementById('rows-select').value = settings.rowsSelect;
-                document.getElementById('use-punctuation').checked = settings.punctuation;
-                toggleModeSettings();
-            });
-
-            socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
-                wordsList = incomingWords;
-                totalWordsInBatch = wordsList.length;
-                renderWords();
-                executeVisualCountdownSequence();
-            });
-
-            socket.on('receiveFinalData', (serverResults) => {
-                finishedRacersData = serverResults;
-            });
-
-            socket.on('hostChanged', (newHostId) => {
-                if(socket.id === newHostId) {
-                    isServerHost = true;
-                    alert("Host lama DC. Sekarang lo ditunjuk jadi Host Kamar Balap, Bos!");
-                    document.getElementById('game-mode').disabled = false;
-                    document.getElementById('word-target-input').disabled = false;
-                    document.getElementById('start-btn').style.display = 'inline-block';
-                }
-            });
-
-            socket.on('errorMsg', (msg) => { alert(msg); });
-        }
-
-        function startSinglePlayerMode() {
-            isOnlineMode = false;
-            isServerHost = true;
-            const nick = document.getElementById('nickname-input').value.trim();
-            playerData.name = nick || "Kamu";
-            document.getElementById('lane-player-title').innerText = playerData.name + " (Racer)";
-            document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('main-arena').style.display = 'block';
-            generateText();
-        }
-
-        function createNewOnlineRoom() {
-            const nick = document.getElementById('nickname-input').value.trim();
-            playerData.name = nick || "Racer_Host";
-            initSocketConnection();
-            socket.emit('createRoom', { playerName: playerData.name });
-        }
-
-        function joinOnlineRoom() {
-            const code = document.getElementById('roomcode-input').value.trim().toUpperCase();
-            if(!code) { alert("Masukkan kode room target dulu, bos!"); return; }
-            const nick = document.getElementById('nickname-input').value.trim();
-            playerData.name = nick || "Racer_Guest";
-            initSocketConnection();
-            socket.emit('joinRoom', { roomId: code, playerName: playerData.name });
-        }
-
-        function copyRoomShareLink() {
-            if(!currentOnlineRoomId) return;
-            const url = `${window.location.origin}?room=${currentOnlineRoomId}`;
-            navigator.clipboard.writeText(url).then(() => {
-                alert("Link room mabar berhasil disalin!");
-            });
-        }
-
-        function broadcastSettings() {
-            if(!isOnlineMode || !isServerHost) return;
-            const settings = {
-                gameMode: document.getElementById('game-mode').value,
-                wordTarget: parseInt(document.getElementById('word-target-input').value),
-                timeSelect: document.getElementById('time-select').value,
-                difficulty: document.getElementById('difficulty-select').value,
-                rowsSelect: document.getElementById('rows-select').value,
-                punctuation: document.getElementById('use-punctuation').checked
-            };
-            socket.emit('updateSettings', { roomId: currentOnlineRoomId, settings });
-        }
-
-        function toggleModeSettings() {
-            const mode = document.getElementById('game-mode').value;
-            document.getElementById('row-duration').style.display = mode === 'time' ? '' : 'none';
-            document.getElementById('row-word-count').style.display = mode === 'words' ? '' : 'none';
-        }
-
-        function setRole(join) {
-            isPlayerJoined = join;
-            const roleBadge = document.getElementById('role-text');
-            const playerLane = document.getElementById('lane-player');
-            if(join) {
-                roleBadge.innerText = "PLAYER (JOINED)";
-                roleBadge.className = "role-badge role-join";
-                if(playerLane) playerLane.style.display = "flex";
-                document.getElementById('join-btn').disabled = true;
-                document.getElementById('watch-btn').disabled = false;
-            } else {
-                roleBadge.innerText = "SPECTATOR (NONTON)";
-                roleBadge.className = "role-badge role-watch";
-                if(playerLane) playerLane.style.display = "none";
-                document.getElementById('join-btn').disabled = false;
-                document.getElementById('watch-btn').disabled = true;
-            }
-        }
-
-        function changeCar() {
-            const icon = document.getElementById('car-select').value;
-            document.getElementById('my-car').innerText = icon;
-        }
-
-        function renderLanes() {
-            const container = document.getElementById('lanes-container');
-            const playerLane = document.getElementById('lane-player');
-            container.innerHTML = "";
-            if(playerLane) container.appendChild(playerLane);
-
-            activeBots.forEach((bot) => {
-                const lane = document.createElement('div');
-                lane.className = 'track-lane';
-                lane.innerHTML = `
-                    <div class="lane-info">
-                        <span>${bot.name} ${bot.emoji}</span>
-                        <span class="wpm-counter">WPM: <span id="${bot.id}-wpm">0</span></span>
-                    </div>
-                    <div id="car-${bot.id}" class="car">${bot.emoji}</div>
-                `;
-                container.appendChild(lane);
-            });
-        }
-
-        function addBot() {
-            if (gameActive || activeBots.length >= 4) return;
-            const id = `bot_${Date.now()}`;
-            const randomName = botNames[Math.floor(Math.random() * botNames.length)];
-            const randomEmoji = botEmojis[Math.floor(Math.random() * botEmojis.length)];
-            activeBots.push({ id, name: randomName, emoji: randomEmoji, baseWpm: Math.floor(Math.random()*25+35), currentWpm: 0, typedWords: 0, isFinished: false, progressPercent: 0 });
-            renderLanes();
-        }
-
-        function removeBot() {
-            if (gameActive || activeBots.length === 0) return;
-            activeBots.pop();
-            renderLanes();
-        }
-
-        function generateText() {
-            const isAdvanced = document.getElementById('use-punctuation').checked;
-            const diff = document.getElementById('difficulty-select').value;
-            const mode = document.getElementById('game-mode').value;
+        // Deteksi Ketikan Real-Time Player
+        typingArea.addEventListener('input', () => {
+            const typedText = typingArea.value;
             
-            const bank = diff === 'easy' ? easyWords : hardWords;
-            totalWordsInBatch = mode === 'time' ? 60 : Math.max(25, parseInt(document.getElementById('word-target-input').value));
+            // Cek kecocokan teks awal
+            if (targetText.startsWith(typedText)) {
+                typingArea.style.borderColor = "#38bdf8"; // Biru jika benar
+                
+                // Hitung persentase progress ketikan
+                const progress = Math.floor((typedText.length / targetText.length) * 100);
+                
+                // 1. Update instan mobil sendiri di layar lokal
+                const myCar = document.getElementById(`car-${socket.id}`);
+                if (myCar) myCar.style.left = `${progress}%`;
 
-            wordsList = [];
-            for (let i = 0; i < totalWordsInBatch; i++) {
-                let word = bank[Math.floor(Math.random() * bank.length)];
-                if (isAdvanced) {
-                    if (i === 0 || i % 5 === 0) word = word.charAt(0).toUpperCase() + word.slice(1);
-                    if (i % 6 === 0 && i !== 0) word += ".";
-                }
-                wordsList.push(word);
-            }
-            currentWordIndex = 0;
-        }
-
-        function renderWords() {
-            const wrapper = document.getElementById('words-wrapper');
-            wrapper.innerHTML = "";
-            wordsList.forEach((word, index) => {
-                const span = document.createElement('span');
-                span.innerText = word + " ";
-                span.className = 'word';
-                span.id = `word-${index}`;
-                if (index === 0 && isPlayerJoined) span.className = 'word current';
-                wrapper.appendChild(span);
-            });
-            wrapper.scrollTop = 0;
-        }
-
-        function startGameCountdown() {
-            if (isOnlineMode) {
-                generateText(); 
-                socket.emit('triggerStart', { roomId: currentOnlineRoomId, wordsList: wordsList });
-            } else {
-                generateText();
-                renderWords();
-                executeVisualCountdownSequence();
-            }
-        }
-
-        function executeVisualCountdownSequence() {
-            const cbox = document.getElementById('countdown-box');
-            const ctext = document.getElementById('countdown-text');
-            const cnum = document.getElementById('countdown-number');
-            const lr = document.getElementById('light-r');
-            const ly = document.getElementById('light-y');
-            const lg = document.getElementById('light-g');
-
-            cbox.style.display = "flex";
-            let timerLeft = 5;
-
-            let countdownInterval = setInterval(() => {
-                cnum.innerText = `:0${timerLeft}`;
-                if (timerLeft >= 4) { lr.className = "light red"; ctext.innerText = "Get ready!"; }
-                else if (timerLeft >= 2) { ly.className = "light yellow"; }
-                else if (timerLeft === 1) { lr.className = "light"; ly.className = "light"; lg.className = "light green"; ctext.innerText = "GO!"; }
-                else if (timerLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    cbox.style.display = "none";
-                    realStartGameEngine();
-                }
-                timerLeft--;
-            }, 1000);
-        }
-
-        function realStartGameEngine() {
-            gameActive = true;
-            totalWordsTypedCorrectly = 0;
-            totalKeystrokes = 0;
-            correctKeystrokes = 0;
-            finishedRacersData = [];
-            startTime = Date.now();
-
-            playerData.isFinished = !isPlayerJoined;
-            playerData.currentWpm = 0;
-            playerData.progressPercent = 0;
-
-            activeBots.forEach(b => { b.typedWords = 0; b.isFinished = false; b.currentWpm = 0; b.progressPercent = 0; });
-
-            const input = document.getElementById('input-box');
-            if (isPlayerJoined) { input.disabled = false; input.value = ""; input.focus(); }
-
-            loopInterval = setInterval(() => {
-                let timePassedSeconds = (Date.now() - startTime) / 1000;
-                if (timePassedSeconds < 0.2) return;
-
-                if (isPlayerJoined && !playerData.isFinished) {
-                    let liveWpm = Math.round((correctKeystrokes / 5) / (timePassedSeconds / 60));
-                    playerData.currentWpm = liveWpm;
-                    playerData.progressPercent = (currentWordIndex / totalWordsInBatch) * 85;
-                    
-                    document.getElementById('player-wpm').innerText = liveWpm;
-                    const myCar = document.getElementById('my-car');
-                    if(myCar) myCar.style.left = playerData.progressPercent + "%";
-
-                    if (isOnlineMode) {
-                        socket.emit('updateProgress', {
-                            roomId: currentOnlineRoomId,
-                            progressPercent: playerData.progressPercent,
-                            currentWpm: playerData.currentWpm
-                        });
-                    }
-                }
-
-                activeBots.forEach((bot) => {
-                    if (!bot.isFinished) {
-                        bot.typedWords = (bot.baseWpm / 60) * timePassedSeconds;
-                        bot.currentWpm = bot.baseWpm;
-                        bot.progressPercent = Math.min(85, (bot.typedWords / totalWordsInBatch) * 85);
-
-                        if (bot.progressPercent >= 85) {
-                            bot.isFinished = true;
-                            if(isOnlineMode) {
-                                socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: bot.name, wpm: bot.currentWpm, isPlayer: false });
-                            } else {
-                                finishedRacersData.push({ name: bot.name, wpm: bot.currentWpm, isPlayer: false });
-                            }
-                        }
-                        const bCar = document.getElementById(`car-${bot.id}`);
-                        if(bCar) bCar.style.left = bot.progressPercent + "%";
-                    }
-                });
-
-                const mode = document.getElementById('game-mode').value;
-                if (mode === 'time') {
-                    let totalSelectTime = parseInt(document.getElementById('time-select').value);
-                    if (timePassedSeconds >= totalSelectTime) {
-                        if (isPlayerJoined && !playerData.isFinished) {
-                            if (isOnlineMode) socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true });
-                            else finishedRacersData.push({ name: playerData.name, wpm: playerData.currentWpm, isPlayer: true });
-                        }
-                        endTournament(timePassedSeconds);
-                    }
-                } else {
-                    let allDone = activeBots.every(b => b.isFinished) && (isPlayerJoined ? playerData.isFinished : true);
-                    if (allDone) endTournament(timePassedSeconds);
-                }
-
-            }, 100);
-        }
-
-        function endTournament(finalTimeSeconds) {
-            clearInterval(loopInterval);
-            gameActive = false;
-            document.getElementById('input-box').disabled = true;
-
-            setTimeout(() => {
-                finishedRacersData.sort((a,b) => b.wpm - a.wpm);
-
-                if (finishedRacersData[0]) { document.getElementById('p1-name').innerText = finishedRacersData[0].name; document.getElementById('p1-wpm').innerText = finishedRacersData[0].wpm + " WPM"; }
-                if (finishedRacersData[1]) { document.getElementById('p2-name').innerText = finishedRacersData[1].name; document.getElementById('p2-wpm').innerText = finishedRacersData[1].wpm + " WPM"; }
-                if (finishedRacersData[2]) { document.getElementById('p3-name').innerText = finishedRacersData[2].name; document.getElementById('p3-wpm').innerText = finishedRacersData[2].wpm + " WPM"; }
-
-                let finalWpm = Math.round((correctKeystrokes / 5) / (finalTimeSeconds / 60));
-                let accuracy = totalKeystrokes > 0 ? ((correctKeystrokes / totalKeystrokes) * 100).toFixed(1) : 0;
-
-                document.getElementById('stat-speed').innerText = `${finalWpm * 5} cpm / ${finalWpm} wpm`;
-                document.getElementById('stat-time').innerText = Math.round(finalTimeSeconds) + "s";
-                document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
-                document.getElementById('results-modal').classList.add('active');
-            }, 500);
-        }
-
-        function closeModal() { document.getElementById('results-modal').classList.remove('active'); resetGame(); }
-
-        function resetGame() {
-            clearInterval(loopInterval);
-            gameActive = false;
-            document.getElementById('start-btn').disabled = false;
-            document.getElementById('input-box').value = "";
-            document.getElementById('input-box').disabled = true;
-            document.getElementById('lobby-panel').style.display = 'block';
-            document.getElementById('main-arena').style.display = 'none';
-        }
-
-        document.getElementById('input-box').addEventListener('input', (e) => {
-            if (!gameActive || !isPlayerJoined) return;
-            totalKeystrokes++;
-            const inputField = e.target;
-            let typedValue = inputField.value;
-            const currentTargetWord = wordsList[currentWordIndex];
-            const currentWordSpan = document.getElementById(`word-${currentWordIndex}`);
-
-            if (typedValue.endsWith(" ")) {
-                if (typedValue.trim() === currentTargetWord) {
-                    correctKeystrokes += currentTargetWord.length + 1;
-                    currentWordSpan.className = 'word completed';
-                    currentWordIndex++;
-                    inputField.value = "";
-
-                    if (currentWordIndex >= totalWordsInBatch) {
-                        playerData.isFinished = true;
-                        if (isOnlineMode) socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true });
-                        else finishedRacersData.push({ name: playerData.name, wpm: playerData.currentWpm, isPlayer: true });
-                    } else {
-                        document.getElementById(`word-${currentWordIndex}`).className = 'word current';
-                    }
-                } else {
-                    currentWordSpan.className = 'word current error';
-                    inputField.className = "input-error";
+                // 2. Kirim update terjadwal (Throttled) ke server untuk disebarkan ke musuh
+                const now = Date.now();
+                if (now - lastEmitTime > EMIT_INTERVAL || progress === 100) {
+                    socket.emit('update-progress', currentRoomId, progress);
+                    lastEmitTime = now;
                 }
             } else {
-                if (currentTargetWord.startsWith(typedValue)) {
-                    currentWordSpan.className = 'word current';
-                    inputField.className = "";
-                } else {
-                    currentWordSpan.className = 'word current error';
-                    inputField.className = "input-error";
-                }
+                typingArea.style.borderColor = "#ef4444"; // Merah jika TYPO/MISTAKE!
             }
         });
+
+        // RESPONSE SELESAI CONFIG ROOM DARI SERVER
+        socket.on('room-created', (room) => {
+            alert(`Room siap! Bagikan KODE ROOM ini ke temen lo: ${room.id}`);
+            currentRoomId = room.id;
+            prepareRace(room.players);
+        });
+
+        socket.on('room-updated', (room) => {
+            prepareRace(room.players);
+        });
+
+        socket.on('progress-updated', (data) => {
+            const enemyCar = document.getElementById(`car-${data.playerId}`);
+            if (enemyCar) enemyCar.style.left = `${data.progress}%`;
+        });
+
+        socket.on('player-finished', (data) => {
+            alert(`🏁 BALAPAN SELESAI! ${data.name} Berhasil Finish Duluan!`);
+            typingArea.disabled = true;
+        });
+
+        socket.on('player-left', (playerId) => {
+            const targetCar = document.getElementById(`car-${playerId}`);
+            if (targetCar) targetCar.parentElement.remove();
+        });
+
+        socket.on('error-msg', (msg) => alert(msg));
+
+        // Fungsi Render Jalur Balapan Player
+        function prepareRace(players) {
+            track.innerHTML = "";
+            typingArea.disabled = false; // Aktifkan input ketik jika room valid
+            
+            players.forEach(p => {
+                track.innerHTML += `
+                    <div class="lane">
+                        <div class="player-name">${p.name} ${p.id === socket.id ? '(Lo)' : ''}</div>
+                        <div id="car-${p.id}" class="car-player" style="left: ${p.progress}%;">🏎️</div>
+                    </div>
+                `;
+            });
+        }
     </script>
 </body>
 </html>
