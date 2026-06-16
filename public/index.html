@@ -164,7 +164,7 @@
         .countdown-text { color: #fff; font-size: 1.2rem; font-weight: bold; }
         .countdown-number { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
 
-        /* LIVE LIVE MATCH DURATION TIMER BANNER */
+        /* LIVE MATCH DURATION TIMER BANNER */
         .live-timer-banner { display: none; background: linear-gradient(90deg, #1e293b, #0f172a); border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px 25px; color: #fff; font-size: 1.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 10px auto; width: fit-content; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
 
         /* --- STYLING PODIUM LENGKAP --- */
@@ -185,6 +185,8 @@
         .track-lane { height: 110px; border-bottom: 2px dashed var(--text-muted); position: relative; display: flex; align-items: center; justify-content: space-between; padding-right: 15px; }
         .lane-info { position: absolute; left: 10px; top: 5px; font-size: 0.85rem; color: var(--text-muted); z-index: 2; display: flex; gap: 15px; align-items: center; }
         .lane-info .wpm-counter { color: var(--accent-color); font-weight: bold; }
+        .kick-btn { background: none; border: none; color: var(--wrong-color); font-weight: bold; cursor: pointer; padding: 0 5px; font-size: 0.9rem; margin-left: 5px; transition: transform 0.1s; }
+        .kick-btn:hover { transform: scale(1.2); }
         
         .car-node-wrapper { position: absolute; left: 0; bottom: 5px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 110px; z-index: 5; }
         .car { font-size: 45px; transform: scaleX(-1); width: 100%; text-align: center; }
@@ -221,8 +223,11 @@
         .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
         .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
 
-        .text-display { background-color: var(--bg-color); border-radius: 8px; padding: 20px; font-size: 1.3rem; line-height: 1.8; margin-bottom: 25px; text-align: left; max-height: 250px; overflow-y: auto; word-wrap: break-word; }
-        .word { display: inline-block; padding: 2px 4px; margin: 0 2px; border-radius: 4px; color: var(--text-muted); }
+        /* --- DISPLAY KATA & BARIS --- */
+        .text-display { background-color: var(--bg-color); border-radius: 8px; padding: 20px; font-size: 1.3rem; line-height: 1.8; margin-bottom: 25px; text-align: left; overflow: hidden; position: relative; }
+        .words-line-container { display: flex; flex-direction: column; gap: 5px; transition: transform 0.3s ease; }
+        .word-line { display: block; white-space: normal; word-wrap: break-word; min-height: 35px; }
+        .word { display: inline-block; padding: 2px 4px; margin: 0 4px; border-radius: 4px; color: var(--text-muted); }
         .word.current { color: var(--text-main); background-color: rgba(56, 189, 248, 0.2); box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
         .word.current.error { background-color: rgba(248, 113, 113, 0.3); box-shadow: 0 0 8px var(--wrong-color); color: #fff; }
         .word.completed { color: var(--correct-color); }
@@ -307,6 +312,16 @@
                         <td>Target Jumlah Kata</td>
                         <td>
                             <input type="number" id="word-target-input" value="25" min="25" max="200" style="width: 80px;" oninput="broadcastSettings()">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Opsi Tampilan Baris Kata</td>
+                        <td>
+                            <select id="line-view-select" onchange="broadcastSettings(); if(!gameActive && wordsList.length > 0) renderWords();">
+                                <option value="1">1 Baris</option>
+                                <option value="2" selected>2 Baris</option>
+                                <option value="all">Tampilkan Semua Baris</option>
+                            </select>
                         </td>
                     </tr>
                     <tr>
@@ -425,8 +440,11 @@
             <button id="view-scores-btn" class="btn btn-secondary" style="width: 100%; display: none;" onclick="openScoresModal()">Lihat Hasil Klasemen Akhir Balapan 📊</button>
         </div>
 
+        <!-- TEXT BOX AREA DENGAN WRAPPER CONTAINER UNTUK PEGESERAN BARIS -->
         <div class="track-container">
-            <div class="text-display" id="words-wrapper">Menunggu Host memulai pertandingan...</div>
+            <div class="text-display" id="words-window-box">
+                <div class="words-line-container" id="words-wrapper">Menunggu Host memulai pertandingan...</div>
+            </div>
         </div>
 
         <div class="action-area">
@@ -438,7 +456,7 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP JURA 4 KE BAWAH (LEADERBOARD LENGKAP) -->
+    <!-- MODAL POPUP LEADERBOARD LENGKAP -->
     <div class="modal-overlay" id="results-modal">
         <div class="tournament-results">
             <h2 style="color: var(--accent-color); margin-top:0;">📊 CLASSIFICATION RANKINGS & EVALUASI 📊</h2>
@@ -460,7 +478,7 @@
     </div>
 
     <script>
-        const easyWords = ["dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "bisa", "fokus", "juara", "kunci", "sukses"];
+        const easyWords = ["dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "bisa", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "buku", "pintu", "rumah"];
         const hardWords = ["implementasi", "karakteristik", "sinkronisasi", "kontekstual", "infrastruktur", "kompleksitas", "fundamental", "konsekuensi", "asimetris", "metodologi"];
         const punctuationMarks = [".", ",", "!", "?", ""];
 
@@ -472,6 +490,9 @@
         let isChatCurrentlyOpen = true; 
 
         let wordsList = [];
+        let wordLineMappings = []; // Menyimpan index kata per baris data
+        let currentActiveLineIndex = 0; 
+
         let currentWordIndex = 0;
         let totalWordsInBatch = 0;
         let totalKeystrokes = 0;
@@ -508,10 +529,12 @@
                 document.getElementById('game-mode').value = settings.gameMode;
                 document.getElementById('word-target-input').value = settings.wordTarget;
                 document.getElementById('time-select').value = settings.timeSelect;
+                document.getElementById('line-view-select').value = settings.lineView || "2";
                 document.getElementById('difficulty-select').value = settings.difficulty;
                 document.getElementById('punctuation-toggle').checked = settings.usePunctuation !== false;
                 document.getElementById('capitalize-toggle').checked = settings.useCapitalize !== false;
                 toggleModeSettings();
+                if(!gameActive && wordsList.length > 0) renderWords();
             });
 
             socket.on('tablePanelToggled', ({ isOpen }) => {
@@ -565,6 +588,7 @@
             socket.on('performReset', () => {
                 clearMatchStateData();
                 document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
+                document.getElementById('words-wrapper').style.transform = "translateY(0px)";
                 document.querySelectorAll('.car-node-wrapper').forEach(el => el.style.left = "0%");
                 if (isServerHost) {
                     const btn = document.getElementById('start-btn');
@@ -574,6 +598,13 @@
                     document.getElementById('replay-btn').style.display = "none";
                 }
             });
+        }
+
+        function kickRacer(targetId) {
+            if(!isOnlineMode || !isServerHost) return;
+            if(confirm("Yakin mau kick player ini dari sirkuit balap?")) {
+                socket.emit('kickPlayerAction', { roomId: currentOnlineRoomId, targetId: targetId });
+            }
         }
 
         function triggerTrackBubbleAnim(bubbleElementId, textMessage) {
@@ -634,6 +665,7 @@
             document.getElementById('game-mode').disabled = isGuest;
             document.getElementById('time-select').disabled = isGuest;
             document.getElementById('word-target-input').disabled = isGuest;
+            document.getElementById('line-view-select').disabled = isGuest;
             document.getElementById('difficulty-select').disabled = isGuest;
             document.getElementById('punctuation-toggle').disabled = isGuest;
             document.getElementById('capitalize-toggle').disabled = isGuest;
@@ -686,6 +718,7 @@
             document.getElementById('live-timer-banner').style.display = 'none';
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').disabled = true;
+            document.getElementById('words-wrapper').style.transform = "translateY(0px)";
             resetPodiumUI();
         }
 
@@ -700,6 +733,7 @@
                 gameMode: document.getElementById('game-mode').value,
                 wordTarget: parseInt(document.getElementById('word-target-input').value),
                 timeSelect: document.getElementById('time-select').value,
+                lineView: document.getElementById('line-view-select').value,
                 difficulty: document.getElementById('difficulty-select').value,
                 usePunctuation: document.getElementById('punctuation-toggle').checked,
                 useCapitalize: document.getElementById('capitalize-toggle').checked
@@ -776,12 +810,18 @@
                 const activeCarEmoji = p.carEmoji || "🚗";
                 const isOnline = p.isOnline !== 'offline';
                 
+                // Tambahkan tanda silang merah (❌) untuk Host mengekick player lain
+                let kickMarkup = "";
+                if (isServerHost && !isMe) {
+                    kickMarkup = `<button class="kick-btn" onclick="kickRacer('${p.id}')" title="Kick Player">❌</button>`;
+                }
+
                 const lane = document.createElement('div');
                 lane.className = 'track-lane';
                 lane.innerHTML = `
                     <div class="lane-info">
                         <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                        <span>${isMe ? p.name + " (Kamu)" : p.name}</span>
+                        <span>${isMe ? p.name + " (Kamu)" : p.name}${kickMarkup}</span>
                         <span class="wpm-counter">WPM: <span id="${wpmId}">${p.currentWpm}</span></span>
                     </div>
                     <div id="${wrapperId}" class="car-node-wrapper" style="left: ${p.progressPercent}%;">
@@ -793,7 +833,6 @@
             });
         }
 
-        // UPDATE DATA PODIUM JUARA 1, 2, DAN 3 BESERTA MOBIL PILIHAN NYA MASING-MASING
         function updateLivePodiumUI() {
             // JUARA 1
             if (finishedRacersData[0]) {
@@ -833,7 +872,6 @@
             const tbody = document.getElementById('leaderboard-rows-target');
             tbody.innerHTML = "";
             
-            // Menampilkan seluruh ranking di Modal Evaluasi Akhir (Termasuk juara 4 ke bawah)
             finishedRacersData.forEach((racer, idx) => {
                 let rankDisplay = `#${idx + 1}`;
                 if(idx === 0) rankDisplay = "👑 Juara 1";
@@ -857,12 +895,14 @@
             clearInterval(loopInterval);
             clearTimeout(matchDurationTimeout);
             gameActive = false;
+            currentActiveLineIndex = 0;
             resetPodiumUI(); 
             document.getElementById('results-modal').classList.remove('active');
             document.getElementById('view-scores-btn').style.display = 'none';
             document.getElementById('live-timer-banner').style.display = 'none';
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').disabled = true;
+            document.getElementById('words-wrapper').style.transform = "translateY(0px)";
             if (document.getElementById('player-wpm')) document.getElementById('player-wpm').innerText = "0";
             if (document.getElementById('wrapper-player')) document.getElementById('wrapper-player').style.left = "0%";
             
@@ -894,8 +934,7 @@
             const useCap = document.getElementById('capitalize-toggle').checked;
             
             const selectedMode = document.getElementById('game-mode').value;
-            // Jika mode waktu, generate bank kata yang cukup banyak agar player tidak kehabisan kata saat durasi berjalan
-            totalWordsInBatch = selectedMode === 'time' ? 150 : Math.max(25, parseInt(document.getElementById('word-target-input').value));
+            totalWordsInBatch = selectedMode === 'time' ? 140 : Math.max(25, parseInt(document.getElementById('word-target-input').value));
             wordsList = [];
             
             for (let i = 0; i < totalWordsInBatch; i++) {
@@ -912,16 +951,45 @@
             currentWordIndex = 0;
         }
 
+        // FUNGSI LOGIK PEMBAGIAN BARIS DAN RENDERING KATA SINKRON DENGAN OPSI PILIHAN BARIS
         function renderWords() {
             const wrapper = document.getElementById('words-wrapper');
             wrapper.innerHTML = "";
+            wordLineMappings = [];
+            
+            const lineConfig = document.getElementById('line-view-select').value;
+            
+            // Set batasan tinggi jendela display box
+            const windowBox = document.getElementById('words-window-box');
+            if(lineConfig === "1") windowBox.style.maxHeight = "40px";
+            else if(lineConfig === "2") windowBox.style.maxHeight = "80px";
+            else windowBox.style.maxHeight = "250px";
+
+            let wordsPerLine = 7; // Distribusi default jumlah kata per baris agar rapi
+            let currentLineDiv = document.createElement('div');
+            currentLineDiv.className = "word-line";
+            let currentLineIndices = [];
+
             wordsList.forEach((word, idx) => {
                 const span = document.createElement('span');
                 span.id = `word-${idx}`;
                 span.className = idx === 0 ? 'word current' : 'word';
                 span.innerText = word;
-                wrapper.appendChild(span);
+                currentLineDiv.appendChild(span);
+                currentLineIndices.push(idx);
+
+                if (currentLineIndices.length === wordsPerLine || idx === wordsList.length - 1) {
+                    wrapper.appendChild(currentLineDiv);
+                    wordLineMappings.push(currentLineIndices);
+                    
+                    currentLineDiv = document.createElement('div');
+                    currentLineDiv.className = "word-line";
+                    currentLineIndices = [];
+                }
             });
+            
+            currentActiveLineIndex = 0;
+            wrapper.style.transform = "translateY(0px)";
         }
 
         function requestReplayAction() {
@@ -931,6 +999,7 @@
             } else {
                 clearMatchStateData();
                 document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
+                document.getElementById('words-wrapper').style.transform = "translateY(0px)";
                 activeBots.forEach(b => {
                     b.progressPercent = 0;
                     b.currentWpm = 0;
@@ -992,7 +1061,7 @@
 
         function realStartGameEngine() {
             gameActive = true;
-            totalKeystrokes = 0; correctKeystrokes = 0; currentWordIndex = 0; finishedRacersData = [];
+            totalKeystrokes = 0; correctKeystrokes = 0; currentWordIndex = 0; currentActiveLineIndex = 0; finishedRacersData = [];
             startTime = Date.now();
             playerData.isFinished = false; playerData.currentWpm = 0; playerData.progressPercent = 0;
 
@@ -1001,7 +1070,6 @@
             const input = document.getElementById('input-box');
             input.disabled = false; input.value = ""; input.className = ""; input.placeholder = "Ketik disini..."; input.focus(); 
 
-            // LOGIK & DURATION BANNER KHUSUS MODE WAKTU RUNNING TIME
             const selectedMode = document.getElementById('game-mode').value;
             if(selectedMode === 'time') {
                 const totalDurationConfig = parseInt(document.getElementById('time-select').value);
@@ -1011,7 +1079,6 @@
                 timerBanner.style.display = "block";
                 timerTextNode.innerText = totalDurationConfig;
 
-                // Set automatic force stop game based on time selection
                 matchDurationTimeout = setTimeout(() => {
                     forceFinishMatchEngine();
                 }, totalDurationConfig * 1000);
@@ -1021,7 +1088,6 @@
                 let timePassedSeconds = (Date.now() - startTime) / 1000;
                 if (timePassedSeconds < 0.2) return;
 
-                // Update real-time sisa detik running countdown di layar atas track
                 if(selectedMode === 'time') {
                     const totalDurationConfig = parseInt(document.getElementById('time-select').value);
                     let sisaWaktu = Math.ceil(totalDurationConfig - timePassedSeconds);
@@ -1032,11 +1098,9 @@
                     let liveWpm = Math.round((correctKeystrokes / 5) / (timePassedSeconds / 60)) || 0;
                     playerData.currentWpm = liveWpm;
                     
-                    // Hitung progress bar animasi mobil berjalan di lintasan
                     if(selectedMode === 'words') {
                         playerData.progressPercent = (currentWordIndex / totalWordsInBatch) * 85;
                     } else {
-                        // Mode Waktu: Animasi mobil melaju linear berdasarkan sisa waktu yang tersedia
                         const totalDurationConfig = parseInt(document.getElementById('time-select').value);
                         playerData.progressPercent = Math.min(85, (timePassedSeconds / totalDurationConfig) * 85);
                     }
@@ -1049,7 +1113,6 @@
                     }
                 }
 
-                // Pergerakan Bot Lawan (Hanya di mode Offline Solo)
                 if (!isOnlineMode) {
                     activeBots.forEach((bot) => {
                         if (!bot.isFinished) {
@@ -1063,7 +1126,6 @@
                                     registerRacerFinishedLocal(bot.name, bot.currentWpm, bot.emoji);
                                 }
                             } else {
-                                // Mode waktu: Bot melaju seiring waktu hingga garis finish bersamaan waktu habis
                                 const totalDurationConfig = parseInt(document.getElementById('time-select').value);
                                 bot.progressPercent = Math.min(85, (timePassedSeconds / totalDurationConfig) * 85);
                             }
@@ -1075,7 +1137,6 @@
                     });
                 }
 
-                // Pengecekan Berhenti untuk Mode Kata
                 if(selectedMode === 'words') {
                     if (playerData.isFinished && (isOnlineMode || activeBots.every(b => b.isFinished))) {
                         clearInterval(loopInterval);
@@ -1089,7 +1150,6 @@
             }, 100);
         }
 
-        // Fungsi stop paksa permainan jika Mode Waktu menyentuh target batas durasi akhir
         function forceFinishMatchEngine() {
             clearInterval(loopInterval);
             gameActive = false;
@@ -1100,9 +1160,7 @@
             if (isOnlineMode) {
                 socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
             } else {
-                // Masukkan Player utama ke list juara
                 registerRacerFinishedLocal(playerData.name, playerData.currentWpm, playerData.carEmoji);
-                // Masukkan seluruh sisa Bot ke list juara offline
                 activeBots.forEach(bot => {
                     registerRacerFinishedLocal(bot.name, bot.currentWpm, bot.emoji);
                 });
@@ -1139,6 +1197,19 @@
                     currentWordIndex++;
                     inputField.value = "";
 
+                    // LOGIK SLIDING BERGANTI BARIS OTOMATIS
+                    const currentLineRange = wordLineMappings[currentActiveLineIndex];
+                    if (currentLineRange && currentWordIndex > currentLineRange[currentLineRange.length - 1]) {
+                        currentActiveLineIndex++;
+                        const lineConfig = document.getElementById('line-view-select').value;
+                        
+                        // Geser naik jika mode yang dipilih adalah 1 baris atau 2 baris saja
+                        if (lineConfig === "1" || lineConfig === "2") {
+                            const offsetHeight = currentActiveLineIndex * 40; 
+                            document.getElementById('words-wrapper').style.transform = `translateY(-${offsetHeight}px)`;
+                        }
+                    }
+
                     const selectedMode = document.getElementById('game-mode').value;
                     if (selectedMode === 'words' && currentWordIndex >= totalWordsInBatch) {
                         playerData.isFinished = true;
@@ -1151,7 +1222,6 @@
                     } else {
                         if(document.getElementById(`word-${currentWordIndex}`)) {
                             document.getElementById(`word-${currentWordIndex}`).className = 'word current';
-                            document.getElementById(`word-${currentWordIndex}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }
                     }
                 } else {
