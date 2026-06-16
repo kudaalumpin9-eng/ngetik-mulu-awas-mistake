@@ -53,13 +53,11 @@ io.on('connection', (socket) => {
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
         
-        // Kirim sisa result pertandingan terakhir jika player baru bergabung di tengah jalan
         if (room.results.length > 0) {
             socket.emit('receiveFinalData', room.results);
         }
     });
 
-    // EVENT KICK PLAYER: DIPERKETAT AGAR VISUAL MOBIL DAN TRACk LANGSUNG HILANG
     socket.on('kickPlayer', ({ roomId, targetPlayerId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id && room.players[targetPlayerId]) {
@@ -68,8 +66,8 @@ io.on('connection', (socket) => {
                 kickedSocket.emit('kickedMsg', "❌ Lo udah ditendang sama Host dari kamar balap!");
                 kickedSocket.leave(roomId);
             }
-            delete room.players[targetPlayerId]; // Hapus data player secara permanen
-            io.to(roomId).emit('roomData', room); // Broadcast agar mobil dan track seketika lenyap
+            delete room.players[targetPlayerId]; 
+            io.to(roomId).emit('roomData', room); 
         }
     });
 
@@ -107,7 +105,7 @@ io.on('connection', (socket) => {
                 room.players[pId].isFinished = false;
             });
             io.to(roomId).emit('gameCountdownStart', { wordsList });
-            io.to(roomId).emit('receiveFinalData', []); // Bersihkan podium di layar semua orang
+            io.to(roomId).emit('receiveFinalData', []); 
         }
     });
 
@@ -122,7 +120,7 @@ io.on('connection', (socket) => {
             });
             io.to(roomId).emit('forceResetMatch');
             io.to(roomId).emit('roomData', room);
-            io.to(roomId).emit('receiveFinalData', []); // Kosongkan data podium lama
+            io.to(roomId).emit('receiveFinalData', []); 
         }
     });
 
@@ -147,14 +145,10 @@ io.on('connection', (socket) => {
         if (room) {
             const sudahAda = room.results.some(r => r.name === name);
             if (!sudahAda) {
-                // Ikut sertakan properti emoji mobil serta tipe player ke dalam array data server
                 room.results.push({ name, wpm, isPlayer, emoji });
                 if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
                 
-                // Urutkan berdasarkan WPM tertinggi dari server sebelum dikirim
                 room.results.sort((a, b) => b.wpm - a.wpm);
-                
-                // Broadcast hasil mutakhir ke SEMUA player secara real-time
                 io.to(roomId).emit('receiveFinalData', room.results);
             }
         }
