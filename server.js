@@ -43,7 +43,7 @@ io.on('connection', (socket) => {
         raceRooms[roomId] = {
             id: roomId,
             hostId: socket.id,
-            isTableOpen: true, // Status awal table terbuka
+            isTableOpen: true, 
             settings: { gameMode: 'words', wordTarget: 25, timeSelect: '60', difficulty: 'easy', punctuation: true },
             players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false } },
             results: []
@@ -61,17 +61,15 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.emit('joinSuccess', { roomId, isHost: false });
         socket.emit('settingsUpdated', room.settings);
-        // Kirim status buka/tutup table yang sedang aktif di room ke player yang baru join
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
     });
 
-    // Handle aksi buka/tutup tabel pengaturan oleh host untuk disebarkan ke semua player
     socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
-            room.isTableOpen = isOpen; // Simpan state terbaru di server
-            socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); // Siarkan ke seluruh guest
+            room.isTableOpen = isOpen; 
+            socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); 
         }
     });
 
@@ -105,14 +103,19 @@ io.on('connection', (socket) => {
         }
     });
 
+    // MENYIMPAN DATA FINAL BESERTA EMOJI MOBIL YANG DIPILIH PLAYER
     socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
         const room = raceRooms[roomId];
         if (room) {
+            // Mencegah duplikasi data pengiriman nama player yang sama
             room.results = room.results.filter(r => r.name !== name);
             room.results.push({ name, wpm, isPlayer, emoji });
+            
             if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
+            
             room.results.sort((a, b) => b.wpm - a.wpm);
-            io.to(roomId).emit('receiveFinalData', room.results); // Mengirim seluruh data hasil pemenang (termasuk juara 2 & 3)
+            // Sebarkan hasil klasemen secara langsung ke semua player untuk di-render di podium & modal ranking
+            io.to(roomId).emit('receiveFinalData', room.results); 
         }
     });
 
