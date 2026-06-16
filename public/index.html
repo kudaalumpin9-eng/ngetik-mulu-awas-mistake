@@ -536,6 +536,19 @@
                 const targetBubbleId = (socket.id === senderId) ? "bubble-player" : `bubble-${senderId}`;
                 triggerTrackBubbleAnim(targetBubbleId, text);
             });
+            socket.on('incomingChatMessage', ({ sender, text, senderId }) => {
+                console.log("Pesan diterima:", text);
+                const bubbleEl = document.getElementById(`bubble-${senderId}`);
+    
+                if (bubbleEl) {
+                bubbleEl.innerText = text;
+                bubbleEl.style.display = "block"; 
+        
+                 setTimeout(() => {
+            bubbleEl.style.display = "none";
+        }, 3000);
+    }
+});
 
             socket.on('hostChanged', (newHostId) => {
                 if(socket.id === newHostId) {
