@@ -36,6 +36,23 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('receiveFinalData', []); 
         }
     });
+
+    // LISTENER EVENT BARU: AKSI RESET DARURAT DI TENGAH MATCH OLEH HOST
+    socket.on('abortMatchMidWay', ({ roomId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.results = [];
+            Object.keys(room.players).forEach(pId => {
+                room.players[pId].currentWpm = 0;
+                room.players[pId].progressPercent = 0;
+                room.players[pId].isFinished = false;
+            });
+            io.to(roomId).emit('forceResetMatch');
+            io.to(roomId).emit('performReset');
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
     console.log(`⚡ Racer Terhubung: ${socket.id}`);
 
     socket.on('createRoom', ({ playerName }) => {
@@ -65,15 +82,12 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomData', room);
     });
 
-    // FUNGSI LOGIK UNTUK AKSI KICK PLAYER OLEH HOST
     socket.on('kickPlayerAction', ({ roomId, targetId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
             if (room.players[targetId]) {
                 delete room.players[targetId];
                 io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sikit balap oleh Host!");
-                
-                // Refresh data lintasan ke semua player tersisa
                 io.to(roomId).emit('roomData', room);
             }
         }
@@ -122,9 +136,7 @@ io.on('connection', (socket) => {
         if (room) {
             room.results = room.results.filter(r => r.name !== name);
             room.results.push({ name, wpm, isPlayer, emoji });
-            
             if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
-            
             room.results.sort((a, b) => b.wpm - a.wpm);
             io.to(roomId).emit('receiveFinalData', room.results); 
         }
