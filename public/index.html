@@ -24,7 +24,21 @@
             --correct-color: #4ade80;
             --wrong-color: #f87171;
         }
-
+        .car-bubble {
+            position: absolute;
+            bottom: 50px; /* Di atas mobil */
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            display: none; /* Awalnya sembunyi */
+            z-index: 999;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
