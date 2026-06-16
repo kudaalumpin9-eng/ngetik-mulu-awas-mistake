@@ -145,7 +145,7 @@
         }
         .accordion-title { font-weight: bold; font-size: 1.1rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
         .accordion-content { max-height: 600px; transition: max-height 0.4s ease-out, padding 0.4s ease-out; padding: 20px; box-sizing: border-box; }
-        .accordion-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden; }
+        .accordion-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden; border: none !important; }
 
         .settings-table { width: 100%; border-collapse: collapse; }
         .settings-table td { padding: 8px; vertical-align: middle; }
@@ -165,14 +165,16 @@
         .countdown-number { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
 
         /* --- STYLING PODIUM --- */
-        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 200px; background-color: rgba(30, 41, 59, 0.5); border: 2px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; transition: max-height 0.4s ease-in-out, padding 0.4s, opacity 0.3s; overflow: hidden; opacity: 1; }
+        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 230px; background-color: rgba(30, 41, 59, 0.5); border: 2px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; transition: max-height 0.4s ease-in-out, padding 0.4s, opacity 0.3s; overflow: hidden; opacity: 1; }
         .live-podium-container.podium-collapsed { height: 0 !important; max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; border: none !important; opacity: 0; pointer-events: none; }
-        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 140px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; }
+        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 140px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; position: relative; }
         .podium-slot .car-parked { font-size: 40px; transform: scaleX(-1); min-height: 50px; margin-bottom: 5px; }
-        .podium-slot .meta-txt { font-size: 0.8rem; line-height: 1.3; color: #fff; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; width: 90%; word-break: break-all; white-space: pre-line; }
-        .podium-slot.first { height: 130px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
-        .podium-slot.second { height: 95px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
-        .podium-slot.third { height: 65px; background: linear-gradient(135deg, #b45309, #78350f); }
+        
+        /* Modifikasi Meta Text di Atas / Samping Mobil */
+        .podium-slot .meta-txt { font-size: 0.8rem; line-height: 1.3; color: #fff; background: rgba(15, 23, 42, 0.85); padding: 4px 6px; border-radius: 6px; margin-bottom: 5px; width: 90%; word-break: break-all; white-space: pre-line; border: 1px solid rgba(255,255,255,0.1); }
+        .podium-slot.first { height: 150px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+        .podium-slot.second { height: 115px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
+        .podium-slot.third { height: 85px; background: linear-gradient(135deg, #b45309, #78350f); }
 
         /* --- LINTASAN BALAP --- */
         .track-container { background-color: var(--card-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 850px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box; }
@@ -273,7 +275,7 @@
             <div class="accordion-header">
                 <div class="accordion-title">
                     <span>⚙️ Pengaturan Kamar Balap</span>
-                    <span id="accordion-status-badge" style="font-size:0.8rem; color:var(--text-muted);"></span>
+                    <span id="accordion-status-badge" style="font-size:0.8rem; color:var(--text-muted);">(Terbuka)</span>
                 </div>
                 <button id="accordion-toggle-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="toggleAccordionAction()">Tutup Pengaturan ▲</button>
             </div>
@@ -501,6 +503,7 @@
                 toggleModeSettings();
             });
 
+            // Sinkronisasi buka/tutup panel pengaturan dari server ke semua player
             socket.on('tablePanelToggled', ({ isOpen }) => {
                 isPanelCurrentlyOpen = isOpen;
                 executePanelRenderUI(isOpen);
@@ -595,23 +598,28 @@
             }
         }
 
+        // Fungsi klik accordion: Mengirim perintah sinkronisasi ke server jika online
         function toggleAccordionAction() {
-            if (!isServerHost) return;
             isPanelCurrentlyOpen = !isPanelCurrentlyOpen;
             executePanelRenderUI(isPanelCurrentlyOpen);
-            if (isOnlineMode) socket.emit('toggleTablePanel', { roomId: currentOnlineRoomId, isOpen: isPanelCurrentlyOpen });
+            if (isOnlineMode && isServerHost) {
+                socket.emit('toggleTablePanel', { roomId: currentOnlineRoomId, isOpen: isPanelCurrentlyOpen });
+            }
         }
 
         function executePanelRenderUI(isOpen) {
             const content = document.getElementById('accordion-content-body');
             const btn = document.getElementById('accordion-toggle-btn');
             const statusBadge = document.getElementById('accordion-status-badge');
+            
             if (isOpen) {
                 content.classList.remove('collapsed');
-                if (isServerHost) { btn.innerText = "Tutup Pengaturan ▲"; statusBadge.innerText = "(Terbuka)"; }
+                statusBadge.innerText = "(Terbuka)";
+                btn.innerText = isServerHost ? "Tutup Pengaturan ▲" : "Tutup ▲";
             } else {
                 content.classList.add('collapsed');
-                if (isServerHost) { btn.innerText = "Buka Pengaturan ▼"; statusBadge.innerText = "(Tertutup)"; }
+                statusBadge.innerText = "(Tertutup)";
+                btn.innerText = isServerHost ? "Buka Pengaturan ▼" : "Buka ▼";
             }
         }
 
@@ -626,7 +634,8 @@
             document.getElementById('bot-management-row').style.display = isGuest ? 'none' : '';
             document.getElementById('start-btn').style.display = isGuest ? 'none' : 'inline-block';
             document.getElementById('replay-btn').style.display = 'none'; 
-            document.getElementById('accordion-toggle-btn').style.display = isGuest ? 'none' : 'inline-block';
+            
+            // Guest tetap bisa melihat tombol untuk membuka/menutup accordion milik mereka secara mandiri, namun status global dikendalikan host
             document.getElementById('role-text').innerText = isServerHost ? "HOST 👑" : "GUEST 🏎️";
             document.getElementById('role-text').className = isServerHost ? "role-badge role-watch" : "role-badge role-join";
             executePanelRenderUI(isPanelCurrentlyOpen);
@@ -778,18 +787,30 @@
             });
         }
 
+        // UPDATE PODIUM JUARA 1, 2, DAN 3 BESERTA TEXT MATANGNYA
         function updateLivePodiumUI() {
             if (finishedRacersData[0]) {
                 document.getElementById('podium-1-meta').innerText = `${finishedRacersData[0].name}\n(${finishedRacersData[0].wpm} WPM)`;
                 document.getElementById('podium-1-car').innerText = finishedRacersData[0].emoji || "🚗";
+            } else {
+                document.getElementById('podium-1-meta').innerText = "Menunggu...";
+                document.getElementById('podium-1-car').innerText = "🏁";
             }
+            
             if (finishedRacersData[1]) {
                 document.getElementById('podium-2-meta').innerText = `${finishedRacersData[1].name}\n(${finishedRacersData[1].wpm} WPM)`;
                 document.getElementById('podium-2-car').innerText = finishedRacersData[1].emoji || "🏎️";
+            } else {
+                document.getElementById('podium-2-meta').innerText = "Menunggu...";
+                document.getElementById('podium-2-car').innerText = "🏁";
             }
+            
             if (finishedRacersData[2]) {
                 document.getElementById('podium-3-meta').innerText = `${finishedRacersData[2].name}\n(${finishedRacersData[2].wpm} WPM)`;
                 document.getElementById('podium-3-car').innerText = finishedRacersData[2].emoji || "🤖";
+            } else {
+                document.getElementById('podium-3-meta').innerText = "Menunggu...";
+                document.getElementById('podium-3-car').innerText = "🏁";
             }
         }
 
@@ -995,6 +1016,7 @@
 
                             if (bot.progressPercent >= 85) {
                                 bot.isFinished = true;
+                                // Masukkan emoji mobil bot yang sesuai
                                 finishedRacersData.push({ name: bot.name, wpm: bot.currentWpm, isPlayer: false, emoji: bot.emoji });
                                 finishedRacersData.sort((a,b) => b.wpm - a.wpm);
                                 updateLivePodiumUI();
