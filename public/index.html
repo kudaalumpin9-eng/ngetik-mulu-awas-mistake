@@ -87,54 +87,31 @@
         select, input[type="number"], input[type="checkbox"] { padding: 8px 12px; background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 6px; outline: none; }
         select:disabled, input:disabled { opacity: 0.6; cursor: not-allowed; }
 
+        /* --- PERBAIKAN LAMPU COUNTDOWN --- */
         .countdown-box { display: none; background: #000; border: 3px solid #334155; border-radius: 8px; padding: 10px 20px; align-items: center; gap: 20px; margin-bottom: 15px; width: fit-content; }
         .lights { display: flex; gap: 10px; }
-        .light { width: 30px; height: 30px; border-radius: 50%; background-color: #222; }
-        .light.red { background-color: #ef4444; box-shadow: 0 0 15px #ef4444; }
-        .light.yellow { background-color: #eab308; box-shadow: 0 0 15px #eab308; }
-        .light.green { background-color: #22c55e; box-shadow: 0 0 15px #22c55e; }
+        .light { width: 30px; height: 30px; border-radius: 50%; background-color: #222; transition: background-color 0.2s, box-shadow 0.2s; }
+        .light-red-active { background-color: #ef4444 !important; box-shadow: 0 0 15px #ef4444; }
+        .light-yellow-active { background-color: #eab308 !important; box-shadow: 0 0 15px #eab308; }
+        .light-green-active { background-color: #22c55e !important; box-shadow: 0 0 15px #22c55e; }
         .countdown-text { color: #fff; font-size: 1.2rem; font-weight: bold; }
         .countdown-timer { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
 
         .track-container { background-color: var(--card-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 850px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box; }
         .track-lanes-wrapper { display: flex; flex-direction: column; gap: 5px; }
+        
+        /* --- LINTASAN ADJUSTMENT KICK BUTTON --- */
         .track-lane { height: 75px; border-bottom: 2px dashed var(--text-muted); position: relative; display: flex; align-items: center; justify-content: space-between; padding-right: 15px; }
-        .lane-info { position: absolute; left: 10px; top: 5px; font-size: 0.85rem; color: var(--text-muted); z-index: 2; display: flex; gap: 15px; }
+        .lane-info { position: absolute; left: 10px; top: 5px; font-size: 0.85rem; color: var(--text-muted); z-index: 2; display: flex; gap: 15px; align-items: center; }
         .lane-info .wpm-counter { color: var(--accent-color); font-weight: bold; }
+        .kick-icon { cursor: pointer; font-size: 0.9rem; margin-left: 5px; filter: grayscale(0.2); transition: transform 0.1s; }
+        .kick-icon:hover { transform: scale(1.2); filter: grayscale(0); }
         .car { font-size: 45px; position: absolute; left: 0; transition: left 0.1s linear; transform: scaleX(-1); width: 60px; text-align: center; z-index: 5; }
 
-        /* --- DESIGN PODIUM DI ATAS TRAK --- */
-        .live-podium-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 20px;
-            margin-bottom: 20px;
-            height: 200px;
-            background-color: rgba(30, 41, 59, 0.5);
-            border: 2px solid rgba(100, 116, 139, 0.2);
-            border-radius: 12px;
-            padding: 15px;
-            width: 100%;
-            max-width: 850px;
-            box-sizing: border-box;
-        }
-        .podium-slot {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 140px;
-            border-radius: 8px 8px 0 0;
-            font-weight: bold;
-            color: #000;
-            justify-content: flex-end;
-            padding-bottom: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            text-align: center;
-        }
+        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-bottom: 20px; height: 200px; background-color: rgba(30, 41, 59, 0.5); border: 2px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; }
+        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 140px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; }
         .podium-slot .car-parked { font-size: 40px; transform: scaleX(-1); min-height: 50px; margin-bottom: 5px; }
         .podium-slot .meta-txt { font-size: 0.8rem; line-height: 1.3; color: #fff; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; width: 90%; word-break: break-all; }
-        
         .podium-slot.first { height: 130px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
         .podium-slot.second { height: 95px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
         .podium-slot.third { height: 65px; background: linear-gradient(135deg, #b45309, #78350f); }
@@ -148,7 +125,21 @@
         .word.current.error { background-color: rgba(248, 113, 113, 0.3); box-shadow: 0 0 8px var(--wrong-color); color: #fff; }
         .word.completed { color: var(--correct-color); }
 
-        .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 850px; }
+        /* --- LAYOUT LAYAR UTAMA + CHAT --- */
+        .arena-grid { display: flex; gap: 20px; width: 100%; max-width: 850px; align-items: flex-start; }
+        .game-main-flow { flex: 1; display: flex; flex-direction: column; }
+        
+        /* --- KOMPONEN CHAT BOX --- */
+        .chat-sidebar { width: 260px; background-color: var(--card-bg); border-radius: 12px; height: 430px; display: none; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.3); overflow: hidden; }
+        .chat-header { background-color: #1e293b; padding: 12px; font-weight: bold; color: var(--accent-color); border-bottom: 1px solid rgba(100,116,139,0.2); text-align: center; font-size: 0.95rem; }
+        .chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; }
+        .chat-msg-item { background: rgba(15,23,42,0.3); padding: 6px 10px; border-radius: 6px; line-height: 1.4; word-break: break-all; }
+        .chat-msg-item strong { color: var(--accent-color); }
+        .chat-input-wrapper { pading: 10px; display: flex; border-top: 1px solid rgba(100,116,139,0.2); background: #111827; padding: 8px; }
+        #chat-input-box { flex: 1; background: var(--bg-color); border: 1px solid var(--text-muted); color: var(--text-main); border-radius: 4px; padding: 6px 10px; outline: none; font-size: 0.85rem; }
+        .btn-send-chat { background: var(--accent-color); color: var(--bg-color); font-weight: bold; border: none; padding: 6px 10px; border-radius: 4px; margin-left: 5px; cursor: pointer; }
+
+        .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; }
         .input-container { display: flex; gap: 12px; align-items: center; }
         #input-box { flex: 1; padding: 15px 20px; font-size: 1.3rem; background-color: var(--card-bg); color: var(--text-main); border: 2px solid var(--text-muted); border-radius: 8px; outline: none; }
         #input-box.input-error { border-color: var(--wrong-color); background-color: rgba(248, 113, 113, 0.05); }
@@ -164,11 +155,9 @@
         .role-join { background-color: rgba(74, 222, 128, 0.2); color: var(--correct-color); }
         .role-watch { background-color: rgba(251, 191, 36, 0.2); color: #fbbf24; }
 
-        /* --- POPUP / MODAL SKOR EVALUASI --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .tournament-results { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 650px; text-align: center; }
-
         .leaderboard-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: left; }
         .leaderboard-table th, .leaderboard-table td { padding: 10px; border-bottom: 1px solid rgba(100,116,139,0.3); }
         .leaderboard-table th { color: var(--accent-color); }
@@ -195,169 +184,180 @@
         </div>
     </div>
 
-    <!-- ARENA PERTANDINGAN UTAMA -->
-    <div id="main-arena" style="display: none; width: 100%; max-width: 850px;">
+    <!-- ARENA PERTANDINGAN UTAMA (FLEX GRID DENGAN CHAT SIDEBAR) -->
+    <div id="main-arena" style="display: none; width: 100%; max-width: 1130px;">
         
-        <!-- ACCORDION PANEL PENGATURAN -->
-        <div class="accordion-wrapper">
-            <div class="accordion-header">
-                <div class="accordion-title">
-                    <span>⚙️ Pengaturan Kamar Balap</span>
-                    <span id="accordion-status-badge" style="font-size:0.8rem; color:var(--text-muted);"></span>
-                </div>
-                <button id="accordion-toggle-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="toggleAccordionAction()">Tutup Pengaturan ▲</button>
-            </div>
-            <div id="accordion-content-body" class="accordion-content">
-                <table class="settings-table">
-                    <tr>
-                        <td>Mode Game</td>
-                        <td>
-                            <select id="game-mode" onchange="toggleModeSettings(); broadcastSettings();">
-                                <option value="time">Mode 1: Berdasarkan Waktu</option>
-                                <option value="words" selected>Mode 2: Berdasarkan Jumlah Kata</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr id="row-duration" style="display: none;">
-                        <td>Durasi Waktu</td>
-                        <td>
-                            <select id="time-select" onchange="broadcastSettings()">
-                                <option value="30">30 Detik</option>
-                                <option value="60" selected>1 Menit</option>
-                                <option value="120">2 Menit</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr id="row-word-count">
-                        <td>Target Jumlah Kata</td>
-                        <td>
-                            <input type="number" id="word-target-input" value="25" min="25" max="200" style="width: 80px;" oninput="broadcastSettings()">
-                            <span style="font-size: 0.85rem; color: var(--text-muted);"> (Min: 25 kata)</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Tingkat Kesusahan Kata</td>
-                        <td>
-                            <select id="difficulty-select" onchange="broadcastSettings()">
-                                <option value="easy" selected>Mudah (Kata Pendek Standar)</option>
-                                <option value="hard">Sulit (Kata Panjang & Simbol)</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Jumlah Baris (Tampilan)</td>
-                        <td>
-                            <select id="rows-select" onchange="broadcastSettings()">
-                                <option value="1">1 Baris</option>
-                                <option value="2" selected>2 Baris</option>
-                                <option value="3">3 Baris</option>
-                                <option value="5">5 Baris</option>
-                                <option value="10">10 Baris</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Kustomisasi Mobil Kamu</td>
-                        <td>
-                            <select id="car-select" onchange="changeCar(); broadcastCarUpdate();">
-                                <option value="🚗">🚗 Mobil Merah</option>
-                                <option value="🏎️">🏎️ Mobil F1</option>
-                                <option value="🚓">🚓 Mobil Polisi</option>
-                                <option value="🚀">🚀 Roket Gede</option>
-                                <option value="🛸">🛸 UFO🛸</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr id="bot-management-row">
-                        <td>Manajemen Bot Lawan</td>
-                        <td>
-                            <button id="add-bot-btn" class="btn btn-secondary" onclick="addBot()" style="padding: 5px 12px; font-size: 0.85rem;">+ Tambah Bot</button>
-                            <button id="remove-bot-btn" class="btn btn-danger" onclick="removeBot()" style="padding: 5px 12px; font-size: 0.85rem;">🗑️ Hapus Bot</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Format Teks Tambahan</td>
-                        <td>
-                            <label><input type="checkbox" id="use-punctuation" checked onchange="broadcastSettings()"> Otomatis Tanda Baca</label>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <div class="countdown-box" id="countdown-box">
-            <div class="lights">
-                <div class="light" id="light-r"></div>
-                <div class="light" id="light-y"></div>
-                <div class="light" id="light-g"></div>
-            </div>
-            <div class="countdown-text" id="countdown-text">Get ready to race!</div>
-            <div class="countdown-timer" id="countdown-number">:05</div>
-        </div>
-
-        <!-- ─── SEKARANG PODIUM UTAMA PINDAH KE ATAS LINTASAN TRAK ─── -->
-        <div class="live-podium-container">
-            <!-- JUARA 2 -->
-            <div class="podium-slot second">
-                <div id="podium-2-meta" class="meta-txt">Menunggu...</div>
-                <div id="podium-2-car" class="car-parked">🏁</div>
-                <div style="color: #1e293b; margin-top: 5px;">2nd Place</div>
-            </div>
-            <!-- JUARA 1 -->
-            <div class="podium-slot first">
-                <div id="podium-1-meta" class="meta-txt">Menunggu...</div>
-                <div id="podium-1-car" class="car-parked">🏁</div>
-                <div style="color: #1e293b; margin-top: 5px;">1st Place 👑</div>
-            </div>
-            <!-- JUARA 3 -->
-            <div class="podium-slot third">
-                <div id="podium-3-meta" class="meta-txt">Menunggu...</div>
-                <div id="podium-3-car" class="car-parked">🏁</div>
-                <div style="color: #1e293b; margin-top: 5px;">3rd Place</div>
-            </div>
-        </div>
-
-        <!-- LINTASAN BALAP -->
-        <div class="track-container">
-            <div class="status-display">
-                <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
-                <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
-                    <button class="btn btn-danger" style="padding: 5px 12px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
-                </div>
-            </div>
+        <div class="arena-grid">
             
-            <div class="track-lanes-wrapper" id="lanes-container">
-                <!-- Baris lintasan diisi secara dinamis -->
-            </div>
-        </div>
+            <!-- ALUR UTAMA GAME -->
+            <div class="game-main-flow">
+                <!-- ACCORDION PANEL PENGATURAN -->
+                <div class="accordion-wrapper">
+                    <div class="accordion-header">
+                        <div class="accordion-title">
+                            <span>⚙️ Pengaturan Kamar Balap</span>
+                            <span id="accordion-status-badge" style="font-size:0.8rem; color:var(--text-muted);"></span>
+                        </div>
+                        <button id="accordion-toggle-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="toggleAccordionAction()">Tutup Pengaturan ▲</button>
+                    </div>
+                    <div id="accordion-content-body" class="accordion-content">
+                        <table class="settings-table">
+                            <tr>
+                                <td>Mode Game</td>
+                                <td>
+                                    <select id="game-mode" onchange="toggleModeSettings(); broadcastSettings();">
+                                        <option value="time">Mode 1: Berdasarkan Waktu</option>
+                                        <option value="words" selected>Mode 2: Berdasarkan Jumlah Kata</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr id="row-duration" style="display: none;">
+                                <td>Durasi Waktu</td>
+                                <td>
+                                    <select id="time-select" onchange="broadcastSettings()">
+                                        <option value="30">30 Detik</option>
+                                        <option value="60" selected>1 Menit</option>
+                                        <option value="120">2 Menit</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr id="row-word-count">
+                                <td>Target Jumlah Kata</td>
+                                <td>
+                                    <input type="number" id="word-target-input" value="25" min="25" max="200" style="width: 80px;" oninput="broadcastSettings()">
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);"> (Min: 25 kata)</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Tingkat Kesusahan Kata</td>
+                                <td>
+                                    <select id="difficulty-select" onchange="broadcastSettings()">
+                                        <option value="easy" selected>Mudah (Kata Pendek Standar)</option>
+                                        <option value="hard">Sulit (Kata Panjang & Simbol)</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Jumlah Baris (Tampilan)</td>
+                                <td>
+                                    <select id="rows-select" onchange="broadcastSettings()">
+                                        <option value="1">1 Baris</option>
+                                        <option value="2" selected>2 Baris</option>
+                                        <option value="3">3 Baris</option>
+                                        <option value="5">5 Baris</option>
+                                        <option value="10">10 Baris</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Kustomisasi Mobil Kamu</td>
+                                <td>
+                                    <select id="car-select" onchange="changeCar(); broadcastCarUpdate();">
+                                        <option value="🚗">🚗 Mobil Merah</option>
+                                        <option value="🏎️">🏎️ Mobil F1</option>
+                                        <option value="🚓">🚓 Mobil Polisi</option>
+                                        <option value="🚀">🚀 Roket Gede</option>
+                                        <option value="🛸">🛸 UFO🛸</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr id="bot-management-row">
+                                <td>Manajemen Bot Lawan</td>
+                                <td>
+                                    <button id="add-bot-btn" class="btn btn-secondary" onclick="addBot()" style="padding: 5px 12px; font-size: 0.85rem;">+ Tambah Bot</button>
+                                    <button id="remove-bot-btn" class="btn btn-danger" onclick="removeBot()" style="padding: 5px 12px; font-size: 0.85rem;">🗑️ Hapus Bot</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Format Teks Tambahan</td>
+                                <td>
+                                    <label><input type="checkbox" id="use-punctuation" checked onchange="broadcastSettings()"> Otomatis Tanda Baca</label>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
 
-        <!-- TOMBOL STRATEGIS UNTUK AKSES EVALUASI & REVIEW PAPAN SKOR -->
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button id="view-scores-btn" class="btn btn-secondary" style="width: 100%; display: none;" onclick="openScoresModal()">Lihat Deskripsi Penilaian Kemenangan 📊</button>
-        </div>
+                <!-- LAMPU COUNTDOWN -->
+                <div class="countdown-box" id="countdown-box">
+                    <div class="lights">
+                        <div class="light" id="light-r"></div>
+                        <div class="light" id="light-y"></div>
+                        <div class="light" id="light-g"></div>
+                    </div>
+                    <div class="countdown-text" id="countdown-text">Get ready to race!</div>
+                    <div class="countdown-timer" id="countdown-number">:05</div>
+                </div>
 
-        <div class="track-container">
-            <div class="text-display" id="words-wrapper">
-                Menunggu Host memulai pertandingan...
-            </div>
-        </div>
+                <!-- LIVE PODIUM DI ATAS LINTASAN -->
+                <div class="live-podium-container">
+                    <div class="podium-slot second">
+                        <div id="podium-2-meta" class="meta-txt">Menunggu...</div>
+                        <div id="podium-2-car" class="car-parked">🏁</div>
+                        <div style="color: #1e293b; margin-top: 5px;">2nd Place</div>
+                    </div>
+                    <div class="podium-slot first">
+                        <div id="podium-1-meta" class="meta-txt">Menunggu...</div>
+                        <div id="podium-1-car" class="car-parked">🏁</div>
+                        <div style="color: #1e293b; margin-top: 5px;">1st Place 👑</div>
+                    </div>
+                    <div class="podium-slot third">
+                        <div id="podium-3-meta" class="meta-txt">Menunggu...</div>
+                        <div id="podium-3-car" class="car-parked">🏁</div>
+                        <div style="color: #1e293b; margin-top: 5px;">3rd Place</div>
+                    </div>
+                </div>
 
-        <div class="action-area">
-            <div class="input-container">
-                <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu Balapan Dimulai...">
-                <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
-                <button id="replay-btn" class="btn btn-success" onclick="startGameCountdown()" style="display: none;">Ulang Match 🔄</button>
+                <!-- LINTASAN BALAP -->
+                <div class="track-container">
+                    <div class="status-display">
+                        <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
+                        <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
+                            <button class="btn btn-danger" style="padding: 5px 12px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
+                        </div>
+                    </div>
+                    <div class="track-lanes-wrapper" id="lanes-container"></div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button id="view-scores-btn" class="btn btn-secondary" style="width: 100%; display: none;" onclick="openScoresModal()">Lihat Deskripsi Penilaian Kemenangan 📊</button>
+                </div>
+
+                <div class="track-container">
+                    <div class="text-display" id="words-wrapper">Menunggu Host memulai pertandingan...</div>
+                </div>
+
+                <div class="action-area">
+                    <div class="input-container">
+                        <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu Balapan Dimulai...">
+                        <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
+                        <!-- FIX: Pemanggilan fungsi replay dialihkan ke requestReplayAction -->
+                        <button id="replay-btn" class="btn btn-success" onclick="requestReplayAction()" style="display: none;">Ulang Match 🔄</button>
+                    </div>
+                </div>
             </div>
+
+            <!-- CHAT ROOM SIDEBAR -->
+            <div class="chat-sidebar" id="chat-sidebar-panel">
+                <div class="chat-header">💬 Live Chat Room</div>
+                <div class="chat-messages" id="chat-messages-target">
+                    <div class="chat-msg-item" style="color: var(--text-muted); text-align: center; font-style: italic;">Selamat datang di obrolan room!</div>
+                </div>
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input-box" placeholder="Ketik pesan..." onkeydown="if(event.key === 'Enter') sendChatMessageAction()">
+                    <button class="btn-send-chat" onclick="sendChatMessageAction()">Kirim</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- POPUP HASIL DAN DETAIL EVALUASI EVALUASI (OPSIONAL BISA DIBUKA SEMUA RACER) -->
+    <!-- POPUP EVALUASI -->
     <div class="modal-overlay" id="results-modal">
         <div class="tournament-results">
             <h2 style="color: var(--accent-color); margin-top:0;">📊 HASIL & PENILAIAN EVALUASI 📊</h2>
-            
             <div class="stats-grid-container" style="background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px;">
                 <table class="leaderboard-table">
                     <thead>
@@ -368,12 +368,9 @@
                             <th>Status Role</th>
                         </tr>
                     </thead>
-                    <tbody id="leaderboard-rows-target">
-                        <!-- Data live diisi dari server -->
-                    </tbody>
+                    <tbody id="leaderboard-rows-target"></tbody>
                 </table>
             </div>
-
             <h3 style="margin-top: 20px; color: var(--correct-color);">Statistik Ketikan Personal Anda:</h3>
             <div style="display: flex; justify-content: space-around; background: #0f172a; padding: 15px; border-radius: 8px; font-weight: bold;">
                 <div>Kecepatan: <span id="stat-speed" style="color:var(--accent-color);">0 wpm</span></div>
@@ -418,6 +415,7 @@
                 document.getElementById('main-arena').style.display = 'block';
                 document.getElementById('room-id-badge').style.display = 'block';
                 document.getElementById('room-code-txt').innerText = roomId;
+                document.getElementById('chat-sidebar-panel').style.display = 'flex'; // Aktifkan chat box
 
                 applyHostAuthorizationUI();
             });
@@ -442,19 +440,33 @@
             });
 
             socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
-                resetPodiumUI(); 
-                document.getElementById('results-modal').classList.remove('active');
-                document.getElementById('view-scores-btn').style.display = 'none';
+                clearMatchStateData();
                 wordsList = incomingWords;
                 totalWordsInBatch = wordsList.length;
                 renderWords();
                 executeVisualCountdownSequence();
             });
 
+            // Mendengar instruksi reset dari host mabar online
+            socket.on('forceResetMatch', () => {
+                clearMatchStateData();
+                document.getElementById('words-wrapper').innerText = "Match diulang oleh Host. Bersiap dimulai kembali...";
+            });
+
             socket.on('receiveFinalData', (serverResults) => {
                 finishedRacersData = serverResults;
                 updateLivePodiumUI();
                 document.getElementById('view-scores-btn').style.display = 'block'; 
+            });
+
+            // Mendengar broadcast pesan chat baru
+            socket.on('incomingChatMessage', ({ sender, text }) => {
+                const chatContainer = document.getElementById('chat-messages-target');
+                const msgNode = document.createElement('div');
+                msgNode.className = "chat-msg-item";
+                msgNode.innerHTML = `<strong>${sender}:</strong> ${text}`;
+                chatContainer.appendChild(msgNode);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             });
 
             socket.on('hostChanged', (newHostId) => {
@@ -533,6 +545,7 @@
             playerData.name = document.getElementById('nickname-input').value.trim() || "Kamu";
             document.getElementById('lobby-panel').style.display = 'none';
             document.getElementById('main-arena').style.display = 'block';
+            document.getElementById('chat-sidebar-panel').style.display = 'none'; // Sembunyikan chat jika main offline
             applyHostAuthorizationUI();
             renderLanesLocal();
         }
@@ -566,6 +579,7 @@
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').disabled = true;
             document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
+            document.getElementById('chat-messages-target').innerHTML = '<div class="chat-msg-item" style="color: var(--text-muted); text-align: center; font-style: italic;">Selamat datang di obrolan room!</div>';
             resetPodiumUI();
         }
 
@@ -605,6 +619,15 @@
             if (document.getElementById('my-car')) document.getElementById('my-car').innerText = playerData.carEmoji;
         }
 
+        function sendChatMessageAction() {
+            const chatInput = document.getElementById('chat-input-box');
+            const msgText = chatInput.value.trim();
+            if(!msgText || !isOnlineMode) return;
+            
+            socket.emit('sendChatMessage', { roomId: currentOnlineRoomId, sender: playerData.name, text: msgText });
+            chatInput.value = "";
+        }
+
         function renderLanesLocal() {
             const container = document.getElementById('lanes-container');
             container.innerHTML = `<div class="track-lane"><div class="lane-info"><span>${playerData.name} (Kamu)</span><span class="wpm-counter">WPM: <span id="player-wpm">0</span></span></div><div id="my-car" class="car">${playerData.carEmoji}</div></div>`;
@@ -623,17 +646,18 @@
                 const activeCarEmoji = p.carEmoji || "🚗";
                 
                 let kickBtnHtml = "";
+                // PERBAIKAN: Tombol kick diganti hanya simbol silang ❌ di samping info nama
                 if (isServerHost && !isMe) {
-                    kickBtnHtml = `<button class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="kickRacer('${p.id}')">Kick ❌</button>`;
+                    kickBtnHtml = `<span class="kick-icon" onclick="kickRacer('${p.id}')" title="Kick Player">❌</span>`;
                 }
 
                 lane.innerHTML = `
                     <div class="lane-info">
                         <span>${isMe ? p.name + " (Kamu)" : p.name} ${activeCarEmoji}</span>
+                        ${kickBtnHtml}
                         <span class="wpm-counter">WPM: <span id="${isMe ? 'player-wpm' : p.id + '-wpm'}">${p.currentWpm}</span></span>
                     </div>
                     <div id="${isMe ? 'my-car' : 'car-' + p.id}" class="car" style="left: ${p.progressPercent}%;">${activeCarEmoji}</div>
-                    ${kickBtnHtml}
                 `;
                 container.appendChild(lane);
             });
@@ -658,6 +682,23 @@
             document.getElementById('podium-1-meta').innerText = "Menunggu..."; document.getElementById('podium-1-car').innerText = "🏁";
             document.getElementById('podium-2-meta').innerText = "Menunggu..."; document.getElementById('podium-2-car').innerText = "🏁";
             document.getElementById('podium-3-meta').innerText = "Menunggu..."; document.getElementById('podium-3-car').innerText = "🏁";
+        }
+
+        function clearMatchStateData() {
+            clearInterval(loopInterval);
+            gameActive = false;
+            resetPodiumUI(); 
+            document.getElementById('results-modal').classList.remove('active');
+            document.getElementById('view-scores-btn').style.display = 'none';
+            document.getElementById('input-box').value = "";
+            document.getElementById('input-box').disabled = true;
+            document.getElementById('player-wpm').innerText = "0";
+            if (document.getElementById('my-car')) document.getElementById('my-car').style.left = "0%";
+            
+            // Bersihkan indikator lampu countdown
+            document.getElementById('light-r').className = "light";
+            document.getElementById('light-y').className = "light";
+            document.getElementById('light-g').className = "light";
         }
 
         function openScoresModal() {
@@ -686,8 +727,6 @@
             document.getElementById('results-modal').classList.remove('active');
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').placeholder = "Silakan bersiap untuk match selanjutnya...";
-            if (document.getElementById('my-car')) document.getElementById('my-car').style.left = "0%";
-            document.getElementById('player-wpm').innerText = "0";
         }
 
         function addBot() {
@@ -717,14 +756,17 @@
             currentWordIndex = 0;
         }
 
-        function renderWords() {
-            const wrapper = document.getElementById('words-wrapper');
-            wrapper.innerHTML = "";
-            wordsList.forEach((word, index) => {
-                wrapper.innerHTML += `<span class="word" id="word-${index}">${word} </span>`;
-            });
-            if(document.getElementById('word-0')) document.getElementById('word-0').className = 'word current';
-            wrapper.scrollTop = 0;
+        // FIX: Fungsi kontrol untuk trigger ulang match online / offline agar berfungsi penuh
+        function requestReplayAction() {
+            if (isOnlineMode) {
+                if (!isServerHost) return;
+                socket.emit('requestMatchReplay', { roomId: currentOnlineRoomId });
+                // Setelah reset room terpanggil, langsung mulai hitung mundur baru
+                setTimeout(() => { startGameCountdown(); }, 400);
+            } else {
+                clearMatchStateData();
+                startGameCountdown();
+            }
         }
 
         function startGameCountdown() {
@@ -733,26 +775,44 @@
                 generateText(); 
                 socket.emit('triggerStart', { roomId: currentOnlineRoomId, wordsList: wordsList });
             } else {
-                resetPodiumUI();
-                document.getElementById('view-scores-btn').style.display = 'none';
+                clearMatchStateData();
                 generateText(); renderWords(); executeVisualCountdownSequence();
             }
         }
 
+        // FIX: Lampu peringatan 5 detik diaktifkan dan dikondisikan ulang dengan benar
         function executeVisualCountdownSequence() {
             const cbox = document.getElementById('countdown-box');
             const ctext = document.getElementById('countdown-text');
             const cnum = document.getElementById('countdown-number');
+            
             document.getElementById('start-btn').style.display = 'none';
             document.getElementById('replay-btn').style.display = 'none';
             cbox.style.display = "flex";
+            
             let timerLeft = 5;
+
+            // Reset lampu ke kondisi mati di awal
+            document.getElementById('light-r').className = "light";
+            document.getElementById('light-y').className = "light";
+            document.getElementById('light-g').className = "light";
 
             let countdownInterval = setInterval(() => {
                 cnum.innerText = `:0${timerLeft}`;
-                if (timerLeft >= 4) { document.getElementById('light-r').className = "light red"; ctext.innerText = "Get ready!"; }
-                else if (timerLeft >= 2) { document.getElementById('light-y').className = "light yellow"; }
-                else if (timerLeft === 1) { document.getElementById('light-r').className = "light"; document.getElementById('light-y').className = "light"; document.getElementById('light-g').className = "light green"; ctext.innerText = "GO!"; }
+                
+                if (timerLeft === 5 || timerLeft === 4) { 
+                    document.getElementById('light-r').className = "light light-red-active"; 
+                    ctext.innerText = "Get ready!"; 
+                }
+                else if (timerLeft === 3 || timerLeft === 2) { 
+                    document.getElementById('light-y').className = "light light-yellow-active"; 
+                }
+                else if (timerLeft === 1) { 
+                    document.getElementById('light-r').className = "light"; 
+                    document.getElementById('light-y').className = "light"; 
+                    document.getElementById('light-g').className = "light light-green-active"; 
+                    ctext.innerText = "GO!"; 
+                }
                 else if (timerLeft <= 0) {
                     clearInterval(countdownInterval);
                     cbox.style.display = "none";
