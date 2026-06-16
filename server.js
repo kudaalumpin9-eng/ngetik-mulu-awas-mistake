@@ -14,6 +14,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 const raceRooms = {};
 
 io.on('connection', (socket) => {
+    socket.on('updateStatus', ({ roomId, status }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isOnline = status; // status: 'online' atau 'offline'
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    // Request Reset dari Host
+    socket.on('requestReset', ({ roomId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            io.to(roomId).emit('performReset'); // Perintah semua orang untuk reset
+        }
+    });
     console.log(`⚡ Racer Terhubung: ${socket.id}`);
 
     socket.on('createRoom', ({ playerName }) => {
