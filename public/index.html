@@ -223,10 +223,35 @@
         .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
         .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
 
-        /* --- DISPLAY KATA & BARIS --- */
-        .text-display { background-color: var(--bg-color); border-radius: 8px; padding: 20px; font-size: 1.3rem; line-height: 1.8; margin-bottom: 25px; text-align: left; overflow: hidden; position: relative; }
-        .words-line-container { display: flex; flex-direction: column; gap: 5px; transition: transform 0.3s ease; }
-        .word-line { display: block; white-space: normal; word-wrap: break-word; min-height: 35px; }
+        /* --- DISPLAY KATA & BARIS (DI-UPDATE FULL SAMPAI UJUNG) --- */
+        .text-display { 
+            background-color: var(--bg-color); 
+            border-radius: 8px; 
+            padding: 20px 15px; /* Sedikit dikurangi padding horizontalnya agar mentok sampai ujung luar */
+            font-size: 1.3rem; 
+            line-height: 1.8; 
+            margin-bottom: 25px; 
+            text-align: left; 
+            overflow: hidden; 
+            position: relative; 
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .words-line-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px; 
+            transition: transform 0.3s ease; 
+            width: 100%;
+        }
+        .word-line { 
+            display: block; 
+            white-space: normal; 
+            word-wrap: break-word; 
+            min-height: 35px; 
+            width: 100%;
+            text-align: justify; /* Membuat teks tersebar rata hingga ujung kanan-kiri kotak */
+        }
         .word { display: inline-block; padding: 2px 4px; margin: 0 4px; border-radius: 4px; color: var(--text-muted); }
         .word.current { color: var(--text-main); background-color: rgba(56, 189, 248, 0.2); box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
         .word.current.error { background-color: rgba(248, 113, 113, 0.3); box-shadow: 0 0 8px var(--wrong-color); color: #fff; }
@@ -440,8 +465,8 @@
             <button id="view-scores-btn" class="btn btn-secondary" style="width: 100%; display: none;" onclick="openScoresModal()">Lihat Hasil Klasemen Akhir Balapan 📊</button>
         </div>
 
-        <!-- TEXT BOX AREA DENGAN WRAPPER CONTAINER UNTUK PEGESERAN BARIS -->
-        <div class="track-container">
+        <!-- TEXT BOX AREA (DI-UPDATE FULL SAMPAI UJUNG SESUAI IMAGE_F9B1A4.PNG) -->
+        <div class="track-container" style="padding: 10px;">
             <div class="text-display" id="words-window-box">
                 <div class="words-line-container" id="words-wrapper">Menunggu Host memulai pertandingan...</div>
             </div>
@@ -451,6 +476,10 @@
             <div class="input-container">
                 <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu Balapan Dimulai...">
                 <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
+                
+                <!-- TOMBOL RE-MATCH TENGAH BALAPAN (KHUSUS HOST) -->
+                <button id="mid-game-reset-btn" class="btn btn-danger" onclick="abortAndResetMatchAction()" style="display: none;">Reset Tengah Match 🔄</button>
+                
                 <button id="replay-btn" class="btn btn-success" onclick="requestReplayAction()" style="display: none;">Ulang Match 🔄</button>
             </div>
         </div>
@@ -552,7 +581,9 @@
 
             socket.on('forceResetMatch', () => {
                 clearMatchStateData();
-                document.getElementById('words-wrapper').innerText = "Match diulang oleh Host. Bersiap dimulai kembali...";
+                document.getElementById('words-wrapper').innerText = "Match dibatalkan dan diulang oleh Host. Bersiap...";
+                document.getElementById('words-wrapper').style.transform = "translateY(0px)";
+                document.querySelectorAll('.car-node-wrapper').forEach(el => el.style.left = "0%");
             });
 
             socket.on('receiveFinalData', (serverResults) => {
@@ -596,6 +627,7 @@
                     btn.onclick = startGameCountdown; 
                     btn.style.display = "inline-block";
                     document.getElementById('replay-btn').style.display = "none";
+                    document.getElementById('mid-game-reset-btn').style.display = "none";
                 }
             });
         }
@@ -672,6 +704,7 @@
             document.getElementById('bot-management-row').style.display = isGuest ? 'none' : '';
             document.getElementById('start-btn').style.display = isGuest ? 'none' : 'inline-block';
             document.getElementById('replay-btn').style.display = 'none'; 
+            document.getElementById('mid-game-reset-btn').style.display = 'none';
             
             document.getElementById('role-text').innerText = isServerHost ? "HOST 👑" : "GUEST 🏎️";
             document.getElementById('role-text').className = isServerHost ? "role-badge role-watch" : "role-badge role-join";
@@ -719,6 +752,7 @@
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').disabled = true;
             document.getElementById('words-wrapper').style.transform = "translateY(0px)";
+            document.getElementById('mid-game-reset-btn').style.display = 'none';
             resetPodiumUI();
         }
 
@@ -810,7 +844,6 @@
                 const activeCarEmoji = p.carEmoji || "🚗";
                 const isOnline = p.isOnline !== 'offline';
                 
-                // Tambahkan tanda silang merah (❌) untuk Host mengekick player lain
                 let kickMarkup = "";
                 if (isServerHost && !isMe) {
                     kickMarkup = `<button class="kick-btn" onclick="kickRacer('${p.id}')" title="Kick Player">❌</button>`;
@@ -834,7 +867,6 @@
         }
 
         function updateLivePodiumUI() {
-            // JUARA 1
             if (finishedRacersData[0]) {
                 document.getElementById('podium-1-meta').innerText = `${finishedRacersData[0].name}\n(${finishedRacersData[0].wpm} WPM)`;
                 document.getElementById('podium-1-car').innerText = finishedRacersData[0].emoji || "🚗";
@@ -842,8 +874,6 @@
                 document.getElementById('podium-1-meta').innerText = "Menunggu...";
                 document.getElementById('podium-1-car').innerText = "🏁";
             }
-            
-            // JUARA 2
             if (finishedRacersData[1]) {
                 document.getElementById('podium-2-meta').innerText = `${finishedRacersData[1].name}\n(${finishedRacersData[1].wpm} WPM)`;
                 document.getElementById('podium-2-car').innerText = finishedRacersData[1].emoji || "🏎️";
@@ -851,8 +881,6 @@
                 document.getElementById('podium-2-meta').innerText = "Menunggu...";
                 document.getElementById('podium-2-car').innerText = "🏁";
             }
-            
-            // JUARA 3
             if (finishedRacersData[2]) {
                 document.getElementById('podium-3-meta').innerText = `${finishedRacersData[2].name}\n(${finishedRacersData[2].wpm} WPM)`;
                 document.getElementById('podium-3-car').innerText = finishedRacersData[2].emoji || "🤖";
@@ -871,13 +899,11 @@
         function renderLeaderboardTableDOM() {
             const tbody = document.getElementById('leaderboard-rows-target');
             tbody.innerHTML = "";
-            
             finishedRacersData.forEach((racer, idx) => {
                 let rankDisplay = `#${idx + 1}`;
                 if(idx === 0) rankDisplay = "👑 Juara 1";
                 else if(idx === 1) rankDisplay = "🥈 Juara 2";
                 else if(idx === 2) rankDisplay = "🥉 Juara 3";
-
                 tbody.innerHTML += `<tr><td><b>${rankDisplay}</b></td><td>${racer.name} ${racer.emoji || ''}</td><td style="color:var(--accent-color); font-weight:bold;">${racer.wpm} WPM</td></tr>`;
             });
         }
@@ -902,7 +928,9 @@
             document.getElementById('live-timer-banner').style.display = 'none';
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').disabled = true;
+            document.getElementById('input-box').placeholder = "Menunggu balapan...";
             document.getElementById('words-wrapper').style.transform = "translateY(0px)";
+            document.getElementById('mid-game-reset-btn').style.display = 'none';
             if (document.getElementById('player-wpm')) document.getElementById('player-wpm').innerText = "0";
             if (document.getElementById('wrapper-player')) document.getElementById('wrapper-player').style.left = "0%";
             
@@ -951,43 +979,59 @@
             currentWordIndex = 0;
         }
 
-        // FUNGSI LOGIK PEMBAGIAN BARIS DAN RENDERING KATA SINKRON DENGAN OPSI PILIHAN BARIS
+        // PERBAIKAN FUNGSIONAL: DI-REMAKE AGAR TEKS OTOMATIS WRAP SAMPAI UJUNG KANAN (TIDAK DIPOTONG STATIS)
         function renderWords() {
             const wrapper = document.getElementById('words-wrapper');
             wrapper.innerHTML = "";
             wordLineMappings = [];
             
             const lineConfig = document.getElementById('line-view-select').value;
-            
-            // Set batasan tinggi jendela display box
             const windowBox = document.getElementById('words-window-box');
+            
             if(lineConfig === "1") windowBox.style.maxHeight = "40px";
             else if(lineConfig === "2") windowBox.style.maxHeight = "80px";
             else windowBox.style.maxHeight = "250px";
 
-            let wordsPerLine = 7; // Distribusi default jumlah kata per baris agar rapi
+            // Membuat line tunggal penampung semua kata agar browser mendistribusikan kata-kata secara dinamis sampai ujung penuh
             let currentLineDiv = document.createElement('div');
             currentLineDiv.className = "word-line";
-            let currentLineIndices = [];
-
+            
+            // Masukkan semua kata ke dalam container utama terlebih dahulu
             wordsList.forEach((word, idx) => {
                 const span = document.createElement('span');
                 span.id = `word-${idx}`;
                 span.className = idx === 0 ? 'word current' : 'word';
                 span.innerText = word;
                 currentLineDiv.appendChild(span);
-                currentLineIndices.push(idx);
-
-                if (currentLineIndices.length === wordsPerLine || idx === wordsList.length - 1) {
-                    wrapper.appendChild(currentLineDiv);
-                    wordLineMappings.push(currentLineIndices);
-                    
-                    currentLineDiv = document.createElement('div');
-                    currentLineDiv.className = "word-line";
-                    currentLineIndices = [];
-                }
             });
-            
+            wrapper.appendChild(currentLineDiv);
+
+            // MENGHITUNG DISTRIBUSI BARIS SECARA REAL-TIME BERDASARKAN ELEMEN YANG JATUH KE BAWAH (AUTO-WRAP)
+            setTimeout(() => {
+                let linesTemp = [];
+                let currentLineIndices = [];
+                let lastTopOffset = -1;
+
+                wordsList.forEach((_, idx) => {
+                    const span = document.getElementById(`word-${idx}`);
+                    if (!span) return;
+                    
+                    let currentTopOffset = span.offsetTop;
+
+                    // Deteksi pergantian baris baru berdasarkan koordinat posisi top vertikal huruf
+                    if (lastTopOffset !== -1 && currentTopOffset > lastTopOffset) {
+                        linesTemp.push(currentLineIndices);
+                        currentLineIndices = [];
+                    }
+                    currentLineIndices.push(idx);
+                    lastTopOffset = currentTopOffset;
+                });
+                if (currentLineIndices.length > 0) {
+                    linesTemp.push(currentLineIndices);
+                }
+                wordLineMappings = linesTemp;
+            }, 50);
+
             currentActiveLineIndex = 0;
             wrapper.style.transform = "translateY(0px)";
         }
@@ -1006,6 +1050,25 @@
                     if(document.getElementById(`wrapper-${b.id}`)) document.getElementById(`wrapper-${b.id}`).style.left = "0%";
                     if(document.getElementById(`${b.id}-wpm`)) document.getElementById(`${b.id}-wpm`).innerText = "0";
                 });
+            }
+        }
+
+        // FUNGSI UNTUK PEMBATALAN & ULANG BALAPAN DI TENGAH JALAN (MID-MATCH RESET)
+        function abortAndResetMatchAction() {
+            if (!isServerHost) return;
+            if (confirm("Apakah kamu yakin ingin membatalkan balapan yang sedang berjalan ini?")) {
+                if (isOnlineMode) {
+                    socket.emit('abortMatchMidWay', { roomId: currentOnlineRoomId });
+                } else {
+                    // Reset lokal untuk mode solo
+                    clearMatchStateData();
+                    document.getElementById('words-wrapper').innerText = "Match dihentikan. Tekan Mulai untuk mengulang!";
+                    activeBots.forEach(b => {
+                        b.progressPercent = 0; b.currentWpm = 0; b.isFinished = false;
+                        if(document.getElementById(`wrapper-${b.id}`)) document.getElementById(`wrapper-${b.id}`).style.left = "0%";
+                        if(document.getElementById(`${b.id}-wpm`)) document.getElementById(`${b.id}-wpm`).innerText = "0";
+                    });
+                }
             }
         }
 
@@ -1029,6 +1092,7 @@
             
             document.getElementById('start-btn').style.display = 'none';
             document.getElementById('replay-btn').style.display = 'none';
+            document.getElementById('mid-game-reset-btn').style.display = 'none';
             cbox.style.display = "flex";
             
             let timerLeft = 10;
@@ -1069,6 +1133,11 @@
 
             const input = document.getElementById('input-box');
             input.disabled = false; input.value = ""; input.className = ""; input.placeholder = "Ketik disini..."; input.focus(); 
+
+            // Memunculkan tombol reset darurat jika user adalah Host utama
+            if (isServerHost) {
+                document.getElementById('mid-game-reset-btn').style.display = "inline-block";
+            }
 
             const selectedMode = document.getElementById('game-mode').value;
             if(selectedMode === 'time') {
@@ -1142,6 +1211,7 @@
                         clearInterval(loopInterval);
                         gameActive = false;
                         document.getElementById('input-box').disabled = true;
+                        document.getElementById('mid-game-reset-btn').style.display = 'none';
                         if (isServerHost) {
                             document.getElementById('replay-btn').style.display = 'inline-block';
                         }
@@ -1156,6 +1226,7 @@
             playerData.isFinished = true;
             document.getElementById('input-box').disabled = true;
             document.getElementById('live-timer-banner').style.display = "none";
+            document.getElementById('mid-game-reset-btn').style.display = "none";
 
             if (isOnlineMode) {
                 socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
@@ -1197,13 +1268,12 @@
                     currentWordIndex++;
                     inputField.value = "";
 
-                    // LOGIK SLIDING BERGANTI BARIS OTOMATIS
+                    // LOGIK SLIDING BERGANTI BARIS OTOMATIS BERDASARKAN ELEMEN AKTIF
                     const currentLineRange = wordLineMappings[currentActiveLineIndex];
                     if (currentLineRange && currentWordIndex > currentLineRange[currentLineRange.length - 1]) {
                         currentActiveLineIndex++;
                         const lineConfig = document.getElementById('line-view-select').value;
                         
-                        // Geser naik jika mode yang dipilih adalah 1 baris atau 2 baris saja
                         if (lineConfig === "1" || lineConfig === "2") {
                             const offsetHeight = currentActiveLineIndex * 40; 
                             document.getElementById('words-wrapper').style.transform = `translateY(-${offsetHeight}px)`;
@@ -1214,6 +1284,7 @@
                     if (selectedMode === 'words' && currentWordIndex >= totalWordsInBatch) {
                         playerData.isFinished = true;
                         playerData.progressPercent = 85;
+                        document.getElementById('mid-game-reset-btn').style.display = 'none';
                         if (isOnlineMode) {
                             socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
                         } else {
