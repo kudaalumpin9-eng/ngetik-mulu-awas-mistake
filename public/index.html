@@ -5,96 +5,176 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NGETIK MULU AWAS MISTAKE</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Load library Socket.io otomatis dari server -->
+    <!-- Server Socket.io -->
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-    <h1>🏎️ NGETIK MULU AWAS MISTAKE</h1>
+    <h1>🏎️ NGETIK MULU AWAS MISTAKE 🏎️</h1>
 
     <div class="game-container">
-        <!-- Setup Menu Mabar -->
-        <div class="setup-area">
-            <input type="text" id="nameInput" placeholder="Masukkan Nickname Lo...">
-            <input type="text" id="roomInput" placeholder="Kode Room (Kosongkan jika ingin buat baru)">
-            <button id="createBtn">Buat Room</button>
-            <button id="joinBtn">Join Mabar</button>
+        <!-- 🎯 KEMBALI KE LAYOUT ASLI LO (Persis image_3fa77d.png) -->
+        <div class="setup-box" id="menuSetup" style="text-align: center; padding: 10px;">
+            <h3 style="color: #38bdf8; margin-top: 0;">🏁 Masuk Sirkuit Balap 🏁</h3>
+            
+            <!-- Input Nickname -->
+            <input type="text" id="nameInput" placeholder="Masukkan Nickname Lo..." value="dimas" style="width: 100%; box-sizing: border-box; text-align: center; margin-bottom: 15px;">
+            
+            <hr style="border: 0; border-top: 1px dashed #334155; margin-bottom: 15px;">
+
+            <!-- Tombol Main Solo / Bot Lawan -->
+            <button id="soloBtn" style="background-color: #4ade80; color: #0f172a; width: 100%; margin-bottom: 15px; padding: 12px; font-weight: bold;">Main Solo + Bot Lawan 🤖</button>
+            
+            <hr style="border: 0; border-top: 1px dashed #334155; margin-bottom: 15px;">
+
+            <!-- Tombol Buat Kamar Mabar Baru -->
+            <button id="createBtn" style="background-color: #38bdf8; color: #0f172a; width: 100%; margin-bottom: 15px; padding: 12px; font-weight: bold;">Buat Kamar Mabar Baru 🌐</button>
+            
+            <!-- Area Join Kamar (Input Kode + Tombol Sampingan) -->
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                <input type="text" id="roomInput" placeholder="KODE KAMAR" style="text-transform: uppercase; text-align: center; max-width: 60%;">
+                <button id="joinBtn" style="background-color: #475569; color: #fff; padding: 10px 20px;">Join Kamar</button>
+            </div>
         </div>
 
-        <!-- Teks Yang Harus Diketik -->
-        <div class="typing-box" id="textChallenge">Loading teks balapan...</div>
-        
-        <!-- Input Ketikan -->
-        <textarea id="typingArea" placeholder="Mulai mengetik di sini ketika room sudah siap..." disabled></textarea>
+        <!-- AREA GAMEPLAY (Akan muncul/aktif setelah mabar atau solo dimulai) -->
+        <div id="gameplayArea" style="margin-top: 25px;">
+            <!-- Teks Tantangan Balapan -->
+            <div class="typing-box" id="textChallenge" style="background-color: #0f172a; border: 2px solid #334155; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.6; text-align: center; margin-bottom: 15px;">
+                Kecepatan jemari menentukan siapa raja jalanan di sirkuit digital ini.
+            </div>
+            
+            <!-- Tempat Ngetik -->
+            <textarea id="typingArea" placeholder="Mulai mengetik di sini ketika game sudah siap..." disabled style="width: 100%; height: 70px; background-color: #0f172a; border: 2px solid #334155; color: #fff; border-radius: 8px; padding: 10px; font-size: 16px; resize: none; box-sizing: border-box;"></textarea>
+        </div>
 
-        <!-- Sirkuit Balapan Lintas Player -->
-        <div id="sirkuit-balapan">
-            <p style="color: #64748b; text-align: center;">Belum masuk room. Buat atau Join room dulu buat mabar!</p>
+        <!-- LINTASAN BALAPAN -->
+        <div id="sirkuit-balapan" style="background-color: #0f172a; border: 2px dashed #334155; border-radius: 8px; padding: 15px; margin-top: 25px;">
+            <p id="sirkuit-placeholder" style="color: #64748b; text-align: center; margin: 10px 0;">Belum masuk sirkuit balap.</p>
         </div>
     </div>
 
+    <!-- LOGIKA SINKRONISASI GAME (SOLO + MULTIPLAYER PRO) -->
     <script>
         const socket = io();
         let currentRoomId = null;
         let myPlayerName = "";
         let targetText = "Kecepatan jemari menentukan siapa raja jalanan di sirkuit digital ini.";
+        let isSoloMode = false;
+        let botInterval = null;
         let lastEmitTime = 0;
-        const EMIT_INTERVAL = 100; // Anti-lag pengiriman paket data
+        const EMIT_INTERVAL = 100;
 
-        // Tampilkan teks tantangan awal
-        document.getElementById('textChallenge').innerText = targetText;
-
+        const soloBtn = document.getElementById('soloBtn');
         const createBtn = document.getElementById('createBtn');
         const joinBtn = document.getElementById('joinBtn');
         const roomInput = document.getElementById('roomInput');
         const nameInput = document.getElementById('nameInput');
         const typingArea = document.getElementById('typingArea');
         const track = document.getElementById('sirkuit-balapan');
+        const textChallenge = document.getElementById('textChallenge');
 
-        // Event Buat Room
+        // ================= FUNGSI 1: MODE SOLO + BOT LAWAN =================
+        soloBtn.addEventListener('click', () => {
+            isSoloMode = true;
+            myPlayerName = nameInput.value.trim() || "dimas";
+            clearInterval(botInterval);
+
+            // Setup UI Sirkuit Solo
+            track.innerHTML = `
+                <div class="lane" style="border-bottom: 1px dashed #334155; padding: 10px 0; position: relative;">
+                    <div class="player-name" style="font-size: 12px; color: #94a3b8;">${myPlayerName} (Lo)</div>
+                    <div id="car-local" class="car-player" style="left: 0%;">🏎️</div>
+                </div>
+                <div class="lane" style="padding: 10px 0; position: relative;">
+                    <div class="player-name" style="font-size: 12px; color: #f43f5e;">Bot Lawan 🤖</div>
+                    <div id="car-bot" class="car-player" style="left: 0%;">🏎️</div>
+                </div>
+            `;
+
+            typingArea.disabled = false;
+            typingArea.value = "";
+            typingArea.focus();
+
+            // Jalankan Bot Lawan secara otomatis biar ada tantangan solo
+            let botProgress = 0;
+            botInterval = setInterval(() => {
+                botProgress += Math.floor(Math.random() * 3) + 1; // Kecepatan ketik bot acak
+                if (botProgress > 100) botProgress = 100;
+                
+                const botCar = document.getElementById('car-bot');
+                if (botCar) botCar.style.left = `${botProgress}%`;
+
+                if (botProgress >= 100 && isSoloMode) {
+                    clearInterval(botInterval);
+                    alert("🤖 Bot Lawan Finish Duluan! Lo kalah cepat, Bos!");
+                    typingArea.disabled = true;
+                }
+            }, 300);
+        });
+
+        // ================= FUNGSI 2: MULTIPLAYER (BUAT KAMAR) =================
         createBtn.addEventListener('click', () => {
-            myPlayerName = nameInput.value.trim() || "Driver_" + Math.floor(Math.random() * 1000);
-            currentRoomId = roomInput.value.trim() || Math.random().toString(36).substring(2, 7).toUpperCase();
+            isSoloMode = false;
+            clearInterval(botInterval);
+            myPlayerName = nameInput.value.trim() || "dimas";
+            currentRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+            
             socket.emit('create-room', currentRoomId, myPlayerName);
         });
 
-        // Event Join Room
+        // ================= FUNGSI 3: MULTIPLAYER (JOIN KAMAR) =================
         joinBtn.addEventListener('click', () => {
-            myPlayerName = nameInput.value.trim() || "Driver_" + Math.floor(Math.random() * 1000);
+            isSoloMode = false;
+            clearInterval(botInterval);
+            myPlayerName = nameInput.value.trim() || "dimas";
             currentRoomId = roomInput.value.trim().toUpperCase();
-            if (!currentRoomId) return alert("Masukkan Kode Room target mabar lo!");
+            
+            if (!currentRoomId) return alert("Isi kode kamarnya dulu, Bos!");
             socket.emit('join-room', currentRoomId, myPlayerName);
         });
 
-        // Deteksi Ketikan Real-Time Player
+        // ================= FUNGSI 4: DETEKSI KETIKAN GAMEPLAY =================
         typingArea.addEventListener('input', () => {
             const typedText = typingArea.value;
             
-            // Cek kecocokan teks awal
             if (targetText.startsWith(typedText)) {
-                typingArea.style.borderColor = "#38bdf8"; // Biru jika benar
-                
-                // Hitung persentase progress ketikan
+                typingArea.style.borderColor = "#38bdf8";
                 const progress = Math.floor((typedText.length / targetText.length) * 100);
                 
-                // 1. Update instan mobil sendiri di layar lokal
-                const myCar = document.getElementById(`car-${socket.id}`);
+                // Update Mobil Sendiri (Solo / Multiplayer)
+                const targetCarId = isSoloMode ? 'car-local' : `car-${socket.id}`;
+                const myCar = document.getElementById(targetCarId);
                 if (myCar) myCar.style.left = `${progress}%`;
 
-                // 2. Kirim update terjadwal (Throttled) ke server untuk disebarkan ke musuh
-                const now = Date.now();
-                if (now - lastEmitTime > EMIT_INTERVAL || progress === 100) {
-                    socket.emit('update-progress', currentRoomId, progress);
-                    lastEmitTime = now;
+                if (progress >= 100) {
+                    if (isSoloMode) {
+                        clearInterval(botInterval);
+                        alert("🎉 Selamat, Bos! Lo menang lawan bot!");
+                        typingArea.disabled = true;
+                    } else {
+                        socket.emit('update-progress', currentRoomId, progress);
+                    }
+                    return;
+                }
+
+                // Kirim koordinat ke server jika dalam mode mabar online
+                if (!isSoloMode) {
+                    const now = Date.now();
+                    if (now - lastEmitTime > EMIT_INTERVAL) {
+                        socket.emit('update-progress', currentRoomId, progress);
+                        lastEmitTime = now;
+                    }
                 }
             } else {
-                typingArea.style.borderColor = "#ef4444"; // Merah jika TYPO/MISTAKE!
+                typingArea.style.borderColor = "#ef4444"; // Deteksi typo/mistake
             }
         });
 
-        // RESPONSE SELESAI CONFIG ROOM DARI SERVER
+        // ================= SOCKET LISTENERS RESMI SERVER =================
         socket.on('room-created', (room) => {
-            alert(`Room siap! Bagikan KODE ROOM ini ke temen lo: ${room.id}`);
+            alert(`Kamar Berhasil Dibuat! KODE KAMAR: ${room.id}`);
+            if (roomInput) roomInput.value = room.id;
             currentRoomId = room.id;
             prepareRace(room.players);
         });
@@ -109,7 +189,7 @@
         });
 
         socket.on('player-finished', (data) => {
-            alert(`🏁 BALAPAN SELESAI! ${data.name} Berhasil Finish Duluan!`);
+            alert(`🏁 BALAPAN MULTIPLAYER SELESAI!\n👑 Pembalap [${data.name}] Berhasil Juara 1!`);
             typingArea.disabled = true;
         });
 
@@ -120,16 +200,19 @@
 
         socket.on('error-msg', (msg) => alert(msg));
 
-        // Fungsi Render Jalur Balapan Player
         function prepareRace(players) {
             track.innerHTML = "";
-            typingArea.disabled = false; // Aktifkan input ketik jika room valid
+            typingArea.disabled = false;
+            typingArea.value = "";
+            typingArea.placeholder = "Kamar mabar siap! Ayo mulai mengetik...";
             
             players.forEach(p => {
                 track.innerHTML += `
-                    <div class="lane">
-                        <div class="player-name">${p.name} ${p.id === socket.id ? '(Lo)' : ''}</div>
-                        <div id="car-${p.id}" class="car-player" style="left: ${p.progress}%;">🏎️</div>
+                    <div class="lane" style="border-bottom: 1px dashed #334155; padding: 10px 0; position: relative; margin-top: 10px;">
+                        <div class="player-name" style="font-size: 12px; color: #94a3b8; font-weight: bold;">
+                            ${p.name} ${p.id === socket.id ? '(Lo)' : ''}
+                        </div>
+                        <div id="car-${p.id}" class="car-player" style="left: ${p.progress}%; font-size: 28px; position: relative; transition: left 0.1s linear;">🏎️</div>
                     </div>
                 `;
             });
