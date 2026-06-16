@@ -223,11 +223,11 @@
         .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
         .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
 
-        /* --- DISPLAY KATA & BARIS (DI-UPDATE FULL SAMPAI UJUNG) --- */
+        /* --- DISPLAY KATA & BARIS (DI-UPDATE SESUAI REQUEST BARIS CUSTOM) --- */
         .text-display { 
             background-color: var(--bg-color); 
             border-radius: 8px; 
-            padding: 20px 15px; /* Sedikit dikurangi padding horizontalnya agar mentok sampai ujung luar */
+            padding: 20px 15px; 
             font-size: 1.3rem; 
             line-height: 1.8; 
             margin-bottom: 25px; 
@@ -236,6 +236,7 @@
             position: relative; 
             width: 100%;
             box-sizing: border-box;
+            transition: max-height 0.3s ease;
         }
         .words-line-container { 
             display: flex; 
@@ -250,7 +251,7 @@
             word-wrap: break-word; 
             min-height: 35px; 
             width: 100%;
-            text-align: justify; /* Membuat teks tersebar rata hingga ujung kanan-kiri kotak */
+            text-align: justify; 
         }
         .word { display: inline-block; padding: 2px 4px; margin: 0 4px; border-radius: 4px; color: var(--text-muted); }
         .word.current { color: var(--text-main); background-color: rgba(56, 189, 248, 0.2); box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
@@ -345,6 +346,7 @@
                             <select id="line-view-select" onchange="broadcastSettings(); if(!gameActive && wordsList.length > 0) renderWords();">
                                 <option value="1">1 Baris</option>
                                 <option value="2" selected>2 Baris</option>
+                                <option value="3">3 Baris</option>
                                 <option value="all">Tampilkan Semua Baris</option>
                             </select>
                         </td>
@@ -465,7 +467,7 @@
             <button id="view-scores-btn" class="btn btn-secondary" style="width: 100%; display: none;" onclick="openScoresModal()">Lihat Hasil Klasemen Akhir Balapan 📊</button>
         </div>
 
-        <!-- TEXT BOX AREA (DI-UPDATE FULL SAMPAI UJUNG SESUAI IMAGE_F9B1A4.PNG) -->
+        <!-- TEXT BOX AREA -->
         <div class="track-container" style="padding: 10px;">
             <div class="text-display" id="words-window-box">
                 <div class="words-line-container" id="words-wrapper">Menunggu Host memulai pertandingan...</div>
@@ -979,7 +981,7 @@
             currentWordIndex = 0;
         }
 
-        // PERBAIKAN FUNGSIONAL: DI-REMAKE AGAR TEKS OTOMATIS WRAP SAMPAI UJUNG KANAN (TIDAK DIPOTONG STATIS)
+        /* --- LOGIK CUSTOMISASI TINGGI BOX & STRATEGI SLIDING BARIS --- */
         function renderWords() {
             const wrapper = document.getElementById('words-wrapper');
             wrapper.innerHTML = "";
@@ -988,15 +990,15 @@
             const lineConfig = document.getElementById('line-view-select').value;
             const windowBox = document.getElementById('words-window-box');
             
-            if(lineConfig === "1") windowBox.style.maxHeight = "40px";
-            else if(lineConfig === "2") windowBox.style.maxHeight = "80px";
-            else windowBox.style.maxHeight = "250px";
+            // Menyesuaikan tinggi kontainer utama secara dinamis berdasarkan baris yang dipilih
+            if (lineConfig === "1") windowBox.style.maxHeight = "40px";
+            else if (lineConfig === "2") windowBox.style.maxHeight = "80px";
+            else if (lineConfig === "3") windowBox.style.maxHeight = "120px";
+            else windowBox.style.maxHeight = "none"; // Tampilkan semuanya tanpa limit tinggi
 
-            // Membuat line tunggal penampung semua kata agar browser mendistribusikan kata-kata secara dinamis sampai ujung penuh
             let currentLineDiv = document.createElement('div');
             currentLineDiv.className = "word-line";
             
-            // Masukkan semua kata ke dalam container utama terlebih dahulu
             wordsList.forEach((word, idx) => {
                 const span = document.createElement('span');
                 span.id = `word-${idx}`;
@@ -1006,7 +1008,7 @@
             });
             wrapper.appendChild(currentLineDiv);
 
-            // MENGHITUNG DISTRIBUSI BARIS SECARA REAL-TIME BERDASARKAN ELEMEN YANG JATUH KE BAWAH (AUTO-WRAP)
+            // MENGHITUNG DISTRIBUSI BARIS SECARA REAL-TIME BERDASARKAN ELEMEN (AUTO-WRAP)
             setTimeout(() => {
                 let linesTemp = [];
                 let currentLineIndices = [];
@@ -1018,7 +1020,6 @@
                     
                     let currentTopOffset = span.offsetTop;
 
-                    // Deteksi pergantian baris baru berdasarkan koordinat posisi top vertikal huruf
                     if (lastTopOffset !== -1 && currentTopOffset > lastTopOffset) {
                         linesTemp.push(currentLineIndices);
                         currentLineIndices = [];
@@ -1053,14 +1054,12 @@
             }
         }
 
-        // FUNGSI UNTUK PEMBATALAN & ULANG BALAPAN DI TENGAH JALAN (MID-MATCH RESET)
         function abortAndResetMatchAction() {
             if (!isServerHost) return;
             if (confirm("Apakah kamu yakin ingin membatalkan balapan yang sedang berjalan ini?")) {
                 if (isOnlineMode) {
                     socket.emit('abortMatchMidWay', { roomId: currentOnlineRoomId });
                 } else {
-                    // Reset lokal untuk mode solo
                     clearMatchStateData();
                     document.getElementById('words-wrapper').innerText = "Match dihentikan. Tekan Mulai untuk mengulang!";
                     activeBots.forEach(b => {
@@ -1134,7 +1133,6 @@
             const input = document.getElementById('input-box');
             input.disabled = false; input.value = ""; input.className = ""; input.placeholder = "Ketik disini..."; input.focus(); 
 
-            // Memunculkan tombol reset darurat jika user adalah Host utama
             if (isServerHost) {
                 document.getElementById('mid-game-reset-btn').style.display = "inline-block";
             }
@@ -1268,13 +1266,14 @@
                     currentWordIndex++;
                     inputField.value = "";
 
-                    // LOGIK SLIDING BERGANTI BARIS OTOMATIS BERDASARKAN ELEMEN AKTIF
+                    // LOGIK SLIDING BERGANTI BARIS OTOMATIS BERDASARKAN ELEMEN AKTIF & PRINSIP DESIGN KUSTOM BARIS
                     const currentLineRange = wordLineMappings[currentActiveLineIndex];
                     if (currentLineRange && currentWordIndex > currentLineRange[currentLineRange.length - 1]) {
                         currentActiveLineIndex++;
                         const lineConfig = document.getElementById('line-view-select').value;
                         
-                        if (lineConfig === "1" || lineConfig === "2") {
+                        // Geser text wrapper ke atas jika mode baris terbatas (1, 2, atau 3 baris) aktif
+                        if (lineConfig === "1" || lineConfig === "2" || lineConfig === "3") {
                             const offsetHeight = currentActiveLineIndex * 40; 
                             document.getElementById('words-wrapper').style.transform = `translateY(-${offsetHeight}px)`;
                         }
