@@ -16,13 +16,12 @@ const raceRooms = {};
 io.on('connection', (socket) => {
     console.log(`⚡ Racer Terhubung: ${socket.id}`);
 
-    // EVENT: BUAT KAMAR
     socket.on('createRoom', ({ playerName }) => {
         const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
         raceRooms[roomId] = {
             id: roomId,
             hostId: socket.id,
-            isTableOpen: true, // Status awal tabel pengaturan terbuka
+            isTableOpen: true,
             settings: {
                 gameMode: 'words',
                 wordTarget: 25,
@@ -41,7 +40,6 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomData', raceRooms[roomId]);
     });
 
-    // EVENT: JOIN KAMAR
     socket.on('joinRoom', ({ roomId, playerName }) => {
         const room = raceRooms[roomId];
         if (!room) {
@@ -52,19 +50,28 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.emit('joinSuccess', { roomId, isHost: false });
         socket.emit('settingsUpdated', room.settings);
-        
-        // Kirim status buka-tutup panel saat ini ke player yang baru join
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
-        
         io.to(roomId).emit('roomData', room);
     });
 
-    // EVENT: SINKRONISASI BUKA-TUTUP TABEL (BARU)
+    // EVENT BARU: HOST MENGELUARKAN PLAYER
+    socket.on('kickPlayer', ({ roomId, targetPlayerId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id && room.players[targetPlayerId]) {
+            const kickedSocket = io.sockets.sockets.get(targetPlayerId);
+            if (kickedSocket) {
+                kickedSocket.emit('kickedMsg', "❌ Lo udah ditendang sama Host dari kamar balap!");
+                kickedSocket.leave(roomId);
+            }
+            delete room.players[targetPlayerId];
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
     socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
             room.isTableOpen = isOpen;
-            // Siarkan perubahan status ke seluruh player di dalam room
             socket.to(roomId).emit('tablePanelToggled', { isOpen });
         }
     });
