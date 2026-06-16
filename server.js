@@ -52,8 +52,14 @@ io.on('connection', (socket) => {
         socket.emit('settingsUpdated', room.settings);
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
+        
+        // Kirim sisa result pertandingan terakhir jika player baru bergabung di tengah jalan
+        if (room.results.length > 0) {
+            socket.emit('receiveFinalData', room.results);
+        }
     });
 
+    // EVENT KICK PLAYER: DIPERKETAT AGAR VISUAL MOBIL DAN TRACk LANGSUNG HILANG
     socket.on('kickPlayer', ({ roomId, targetPlayerId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id && room.players[targetPlayerId]) {
@@ -62,8 +68,8 @@ io.on('connection', (socket) => {
                 kickedSocket.emit('kickedMsg', "❌ Lo udah ditendang sama Host dari kamar balap!");
                 kickedSocket.leave(roomId);
             }
-            delete room.players[targetPlayerId];
-            io.to(roomId).emit('roomData', room);
+            delete room.players[targetPlayerId]; // Hapus data player secara permanen
+            io.to(roomId).emit('roomData', room); // Broadcast agar mobil dan track seketika lenyap
         }
     });
 
@@ -95,17 +101,16 @@ io.on('connection', (socket) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
             room.results = [];
-            // Reset status tanding di data internal server tiap kali start dimulai
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
             });
             io.to(roomId).emit('gameCountdownStart', { wordsList });
+            io.to(roomId).emit('receiveFinalData', []); // Bersihkan podium di layar semua orang
         }
     });
 
-    // FIX EVENT 1: HANDLER REPLAY MATCH ONLINE
     socket.on('requestMatchReplay', ({ roomId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -117,10 +122,10 @@ io.on('connection', (socket) => {
             });
             io.to(roomId).emit('forceResetMatch');
             io.to(roomId).emit('roomData', room);
+            io.to(roomId).emit('receiveFinalData', []); // Kosongkan data podium lama
         }
     });
 
-    // FIX EVENT 2: HANDLER LIVE CHAT DALAM ROOM
     socket.on('sendChatMessage', ({ roomId, sender, text }) => {
         const room = raceRooms[roomId];
         if (room) {
@@ -137,13 +142,19 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer }) => {
+    socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
         const room = raceRooms[roomId];
         if (room) {
             const sudahAda = room.results.some(r => r.name === name);
             if (!sudahAda) {
-                room.results.push({ name, wpm, isPlayer });
+                // Ikut sertakan properti emoji mobil serta tipe player ke dalam array data server
+                room.results.push({ name, wpm, isPlayer, emoji });
                 if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
+                
+                // Urutkan berdasarkan WPM tertinggi dari server sebelum dikirim
+                room.results.sort((a, b) => b.wpm - a.wpm);
+                
+                // Broadcast hasil mutakhir ke SEMUA player secara real-time
                 io.to(roomId).emit('receiveFinalData', room.results);
             }
         }
