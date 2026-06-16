@@ -7,14 +7,15 @@
     <script src="/socket.io/socket.io.js"></script>
     <style>
         .status-dot {
-    height: 10px;
-    width: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 5px;
-}
-.online { background-color: #4ade80; } /* Hijau */
-.offline { background-color: #f87171; } /* Merah */
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .online { background-color: #4ade80; } /* Hijau */
+        .offline { background-color: #f87171; } /* Merah */
+        
         :root {
             --bg-color: #0f172a;
             --card-bg: #1e293b;
@@ -24,21 +25,7 @@
             --correct-color: #4ade80;
             --wrong-color: #f87171;
         }
-        .car-bubble {
-            position: absolute;
-            bottom: 50px; /* Di atas mobil */
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            color: black;
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-size: 12px;
-            display: none; /* Awalnya sembunyi */
-            z-index: 999;
-            white-space: nowrap;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
@@ -198,7 +185,7 @@
         .car-node-wrapper { position: absolute; left: 0; bottom: 5px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 110px; z-index: 5; }
         .car { font-size: 45px; transform: scaleX(-1); width: 100%; text-align: center; }
         
-        /* FIXED REQ: BUBBLE TEXT DIBUAT MAKSIMAL 2 BARIS KE BAWAH JIKA PANJANG */
+        /* BUBBLE TEXT STYLING */
         .car-bubble { 
             position: absolute; 
             bottom: 52px; 
@@ -223,6 +210,7 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
+            z-index: 999;
         }
         .car-bubble.active { opacity: 1; transform: scale(1) translateY(0); }
         .car-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border-width: 6px 6px 0; border-style: solid; border-color: #f8fafc transparent; display: block; width: 0; }
@@ -383,7 +371,6 @@
             </div>
         </div>
 
-        <!-- POSISI BARU CHAT: SEKARANG DI SINI (DI BAWAH PODIUM / DI ATAS ANIMASI TRACK) -->
         <div class="chat-top-container" id="chat-sidebar-panel">
             <div class="chat-header">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -470,7 +457,7 @@
         let isServerHost = true;
         let currentOnlineRoomId = "";
         let isPanelCurrentlyOpen = true;
-        let isChatCurrentlyOpen = true; // State chat lokal baru
+        let isChatCurrentlyOpen = true; 
 
         let wordsList = [];
         let currentWordIndex = 0;
@@ -539,7 +526,9 @@
                 document.getElementById('view-scores-btn').style.display = 'block'; 
             });
 
+            /* PERBAIKAN UTAMA: Menggabungkan logic chat ke satu handler agar tidak konflik */
             socket.on('incomingChatMessage', ({ sender, text, senderId }) => {
+                // 1. Masukkan ke log Chat Box
                 const chatContainer = document.getElementById('chat-messages-target');
                 const msgNode = document.createElement('div');
                 msgNode.className = "chat-msg-item";
@@ -547,22 +536,10 @@
                 chatContainer.appendChild(msgNode);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
 
+                // 2. Tampilkan Bubble Chat di atas Mobil Track Balap
                 const targetBubbleId = (socket.id === senderId) ? "bubble-player" : `bubble-${senderId}`;
                 triggerTrackBubbleAnim(targetBubbleId, text);
             });
-            socket.on('incomingChatMessage', ({ sender, text, senderId }) => {
-                console.log("Pesan diterima:", text);
-                const bubbleEl = document.getElementById(`bubble-${senderId}`);
-    
-                if (bubbleEl) {
-                bubbleEl.innerText = text;
-                bubbleEl.style.display = "block"; 
-        
-                 setTimeout(() => {
-            bubbleEl.style.display = "none";
-        }, 3000);
-    }
-});
 
             socket.on('hostChanged', (newHostId) => {
                 if(socket.id === newHostId) {
@@ -574,6 +551,15 @@
 
             socket.on('kickedMsg', (msg) => { alert(msg); leaveRoomAction(); });
             socket.on('errorMsg', (msg) => { alert(msg); leaveRoomAction(); });
+
+            socket.on('performReset', () => {
+                document.querySelectorAll('.car-node-wrapper').forEach(el => el.style.left = "0%");
+                const btn = document.getElementById('start-btn');
+                btn.innerText = "Mulai Balapan";
+                btn.onclick = startGameCountdown; 
+                btn.style.display = "block";
+                document.getElementById('replay-btn').style.display = "none";
+            });
         }
 
         function triggerTrackBubbleAnim(bubbleElementId, textMessage) {
@@ -594,7 +580,6 @@
             document.getElementById('live-podium-widget').classList.toggle('podium-collapsed');
         }
 
-        /* --- LOGIKA BUKA/TUTUP CHAT SECARA LOKAL --- */
         function toggleChatPanelAction() {
             isChatCurrentlyOpen = !isChatCurrentlyOpen;
             const chatWrapper = document.getElementById('chat-collapsible-wrapper');
@@ -773,11 +758,13 @@
                 const bubbleId = isMe ? "bubble-player" : `bubble-${p.id}`;
                 const wpmId = isMe ? 'player-wpm' : `${p.id}-wpm`;
                 const activeCarEmoji = p.carEmoji || "🚗";
+                const isOnline = p.isOnline !== 'offline';
                 
                 const lane = document.createElement('div');
                 lane.className = 'track-lane';
                 lane.innerHTML = `
                     <div class="lane-info">
+                        <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
                         <span>${isMe ? p.name + " (Kamu)" : p.name}</span>
                         <span class="wpm-counter">WPM: <span id="${wpmId}">${p.currentWpm}</span></span>
                     </div>
@@ -879,6 +866,18 @@
             currentWordIndex = 0;
         }
 
+        function renderWords() {
+            const wrapper = document.getElementById('words-wrapper');
+            wrapper.innerHTML = "";
+            wordsList.forEach((word, idx) => {
+                const span = document.createElement('span');
+                span.id = `word-${idx}`;
+                span.className = idx === 0 ? 'word current' : 'word';
+                span.innerText = word;
+                wrapper.appendChild(span);
+            });
+        }
+
         function requestReplayAction() {
             if (isOnlineMode) {
                 if (!isServerHost) return;
@@ -888,6 +887,10 @@
                 clearMatchStateData();
                 startGameCountdown();
             }
+        }
+
+        function triggerResetMatch() {
+            if (isOnlineMode) socket.emit('requestReset', { roomId: currentOnlineRoomId });
         }
 
         function startGameCountdown() {
@@ -1042,49 +1045,11 @@
             }
         });
 
-       function triggerResetMatch() {
-    socket.emit('requestReset', { roomId: currentOnlineRoomId });
-}
-
-// 2. Listener saat menerima perintah reset
-socket.on('performReset', () => {
-    // Reset visual mobil ke start
-    document.querySelectorAll('.car-node-wrapper').forEach(el => el.style.left = "0%");
-    
-    // Ubah tombol jadi "Mulai"
-    const btn = document.getElementById('start-btn');
-    btn.innerText = "Mulai Balapan";
-    btn.onclick = startRaceFunction; // Arahkan ke fungsi mulai
-    btn.style.display = "block";
-    
-    // Sembunyikan tombol Ulang
-    document.getElementById('replay-btn').style.display = "none";
-});
-
-// 3. Update Render Lanes untuk menampilkan indikator
-function renderLanesOnline(serverPlayers) {
-    const container = document.getElementById('lanes-container');
-    container.innerHTML = "";
-    Object.values(serverPlayers).forEach((p) => {
-        const isOnline = p.isOnline !== 'offline'; // Default online
-        const lane = document.createElement('div');
-        lane.className = 'track-lane';
-        lane.innerHTML = `
-            <div class="lane-info">
-                <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                ${p.name} ${p.id === socket.id ? "(Kamu)" : ""}
-            </div>
-            <div id="wrapper-${p.id}" class="car-node-wrapper" style="left: ${p.progressPercent}%;">
-                <div class="car">${p.carEmoji || "🚗"}</div>
-            </div>
-        `;
-        container.appendChild(lane);
-    });
-}
         document.addEventListener("visibilitychange", () => {
-    const status = document.hidden ? 'offline' : 'online';
-    socket.emit('updateStatus', { roomId: currentOnlineRoomId, status: status });
-});
+            if (!isOnlineMode) return;
+            const status = document.hidden ? 'offline' : 'online';
+            socket.emit('updateStatus', { roomId: currentOnlineRoomId, status: status });
+        });
     </script>
 </body>
 </html>
