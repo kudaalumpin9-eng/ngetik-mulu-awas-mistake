@@ -54,7 +54,6 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('roomData', room);
     });
 
-    // EVENT BARU: HOST MENGELUARKAN PLAYER
     socket.on('kickPlayer', ({ roomId, targetPlayerId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id && room.players[targetPlayerId]) {
@@ -96,7 +95,36 @@ io.on('connection', (socket) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
             room.results = [];
+            // Reset status tanding di data internal server tiap kali start dimulai
+            Object.keys(room.players).forEach(pId => {
+                room.players[pId].currentWpm = 0;
+                room.players[pId].progressPercent = 0;
+                room.players[pId].isFinished = false;
+            });
             io.to(roomId).emit('gameCountdownStart', { wordsList });
+        }
+    });
+
+    // FIX EVENT 1: HANDLER REPLAY MATCH ONLINE
+    socket.on('requestMatchReplay', ({ roomId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.results = [];
+            Object.keys(room.players).forEach(pId => {
+                room.players[pId].currentWpm = 0;
+                room.players[pId].progressPercent = 0;
+                room.players[pId].isFinished = false;
+            });
+            io.to(roomId).emit('forceResetMatch');
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    // FIX EVENT 2: HANDLER LIVE CHAT DALAM ROOM
+    socket.on('sendChatMessage', ({ roomId, sender, text }) => {
+        const room = raceRooms[roomId];
+        if (room) {
+            io.to(roomId).emit('incomingChatMessage', { sender, text });
         }
     });
 
@@ -124,7 +152,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         Object.keys(raceRooms).forEach((roomId) => {
             const room = raceRooms[roomId];
-            if (room.players[socket.id]) {
+            if (room && room.players[socket.id]) {
                 delete room.players[socket.id];
                 if (Object.keys(room.players).length === 0) {
                     delete raceRooms[roomId];
