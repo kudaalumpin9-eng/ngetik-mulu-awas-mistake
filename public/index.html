@@ -57,7 +57,7 @@
             text-align: center;
         }
 
-        /* --- STYLING CHAT BOX DI PALING ATAS DENGAN RESIZE --- */
+        /* --- STYLING CHAT BOX --- */
         .chat-top-container {
             width: 100%;
             max-width: 850px;
@@ -66,7 +66,7 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             overflow: hidden;
-            display: none; /* Muncul jika online */
+            display: none;
         }
         .chat-header {
             background-color: #1e293b;
@@ -85,14 +85,14 @@
             flex-direction: column;
             gap: 8px;
             font-size: 0.9rem;
-            height: 120px; /* Tinggi default awal */
+            height: 120px;
             min-height: 80px;
             max-height: 400px;
-            resize: vertical; /* Fitur dikecilkan / dilebarkan ke bawah */
+            resize: vertical;
             background: rgba(15,23,42,0.2);
         }
 
-        /* --- THEME CUSTOM SCROLLBAR CHAT --- */
+        /* --- THEME SCROLLBAR CHAT --- */
         .chat-messages::-webkit-scrollbar {
             width: 8px;
         }
@@ -158,9 +158,9 @@
         .light-yellow-active { background-color: #eab308 !important; box-shadow: 0 0 15px #eab308; }
         .light-green-active { background-color: #22c55e !important; box-shadow: 0 0 15px #22c55e; }
         .countdown-text { color: #fff; font-size: 1.2rem; font-weight: bold; }
-        .countdown-timer { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
+        .countdown-number { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
 
-        /* --- STYLING PODIUM COLLAPSIBLE --- */
+        /* --- STYLING PODIUM --- */
         .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 200px; background-color: rgba(30, 41, 59, 0.5); border: 2px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; transition: max-height 0.4s ease-in-out, padding 0.4s, opacity 0.3s; overflow: hidden; opacity: 1; }
         .live-podium-container.podium-collapsed { height: 0 !important; max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; border: none !important; opacity: 0; pointer-events: none; }
         .podium-slot { display: flex; flex-direction: column; align-items: center; width: 140px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; }
@@ -215,7 +215,7 @@
 </head>
 <body>
 
-    <h1>🏎️ NGETIK MULU AWAS MISTAKE 🏎️ </h1>
+    <h1>🏎️ NGETIK MULU AWAS MISTAKE 🏎️</h1>
 
     <div class="lobby-panel" id="lobby-panel">
         <h3 style="color: var(--accent-color); margin-top:0;">🏁 Masuk Sirkuit Balap 🏁</h3>
@@ -342,7 +342,7 @@
                 <div class="light" id="light-g"></div>
             </div>
             <div class="countdown-text" id="countdown-text">Get ready to race!</div>
-            <div class="countdown-number" id="countdown-number" style="color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace;">:05</div>
+            <div class="countdown-number" id="countdown-number">:10</div>
         </div>
 
         <div style="margin-bottom: 10px; display: flex; justify-content: flex-start; width: 100%;">
@@ -493,11 +493,10 @@
                 document.getElementById('words-wrapper').innerText = "Match diulang oleh Host. Bersiap dimulai kembali...";
             });
 
-            // TERIMA UPDATE HASIL YANG SELALU REAL-TIME SINKRON UNTUK SEMUA PLAYER
             socket.on('receiveFinalData', (serverResults) => {
                 finishedRacersData = serverResults;
                 updateLivePodiumUI();
-                renderLeaderboardTableDOM(); // Update data modal evaluasi live
+                renderLeaderboardTableDOM();
                 document.getElementById('view-scores-btn').style.display = 'block'; 
             });
 
@@ -533,7 +532,6 @@
             }
         }
 
-        // KONTROL BUKA TUTUP PODIUM WIDGET
         function togglePodiumView() {
             const podium = document.getElementById('live-podium-widget');
             podium.classList.toggle('podium-collapsed');
@@ -712,7 +710,7 @@
         function updateLivePodiumUI() {
             if (finishedRacersData[0]) {
                 document.getElementById('podium-1-meta').innerText = `${finishedRacersData[0].name}\n(${finishedRacersData[0].wpm} WPM)`;
-                document.getElementById('podium-1-car').innerText = finishedRacersData[0].emoji || "🏎️";
+                document.getElementById('podium-1-car').innerText = finishedRacersData[0].emoji || "👑";
             }
             if (finishedRacersData[1]) {
                 document.getElementById('podium-2-meta').innerText = `${finishedRacersData[1].name}\n(${finishedRacersData[1].wpm} WPM)`;
@@ -765,7 +763,7 @@
             document.getElementById('view-scores-btn').style.display = 'none';
             document.getElementById('input-box').value = "";
             document.getElementById('input-box').disabled = true;
-            document.getElementById('player-wpm').innerText = "0";
+            if (document.getElementById('player-wpm')) document.getElementById('player-wpm').innerText = "0";
             if (document.getElementById('my-car')) document.getElementById('my-car').style.left = "0%";
             
             document.getElementById('light-r').className = "light";
@@ -811,6 +809,7 @@
             }
         }
 
+        // FIX: TOMBOL SEKARANG DIJAMIN MEMANGGIL FUNGSI COUNDOWN INI DENGAN BENAR
         function startGameCountdown() {
             if (isOnlineMode) {
                 if(!isServerHost) return;
@@ -818,10 +817,13 @@
                 socket.emit('triggerStart', { roomId: currentOnlineRoomId, wordsList: wordsList });
             } else {
                 clearMatchStateData();
-                generateText(); renderWords(); executeVisualCountdownSequence();
+                generateText(); 
+                renderWords(); 
+                executeVisualCountdownSequence();
             }
         }
 
+        // FIX LOGIKA & RITME LAMPU INDIKATOR COUNDOWN MENJADI 10 DETIK LENGKAP
         function executeVisualCountdownSequence() {
             const cbox = document.getElementById('countdown-box');
             const ctext = document.getElementById('countdown-text');
@@ -831,29 +833,32 @@
             document.getElementById('replay-btn').style.display = 'none';
             cbox.style.display = "flex";
             
-            let timerLeft = 5;
+            let timerLeft = 10; // Mengubah peringatan menjadi 10 detik
 
             document.getElementById('light-r').className = "light";
             document.getElementById('light-y').className = "light";
             document.getElementById('light-g').className = "light";
 
             let countdownInterval = setInterval(() => {
-                cnum.innerText = `:0${timerLeft}`;
+                cnum.innerText = timerLeft >= 10 ? `:${timerLeft}` : `:0${timerLeft}`;
                 
-                if (timerLeft === 5 || timerLeft === 4) { 
+                // Ritme Lampu Diatur Sesuai Proporsi 10 Detik
+                if (timerLeft <= 10 && timerLeft >= 7) { 
                     document.getElementById('light-r').className = "light light-red-active"; 
                     ctext.innerText = "Get ready!"; 
                 }
-                else if (timerLeft === 3 || timerLeft === 2) { 
+                else if (timerLeft <= 6 && timerLeft >= 3) { 
                     document.getElementById('light-y').className = "light light-yellow-active"; 
+                    ctext.innerText = "Prepare engine..."; 
                 }
-                else if (timerLeft === 1) { 
+                else if (timerLeft <= 2 && timerLeft >= 1) { 
                     document.getElementById('light-r').className = "light"; 
                     document.getElementById('light-y').className = "light"; 
                     document.getElementById('light-g').className = "light light-green-active"; 
                     ctext.innerText = "GO!"; 
                 }
-                else if (timerLeft <= 0) {
+                
+                if (timerLeft <= 0) {
                     clearInterval(countdownInterval);
                     cbox.style.display = "none";
                     realStartGameEngine();
@@ -882,7 +887,7 @@
                     playerData.currentWpm = liveWpm;
                     playerData.progressPercent = (currentWordIndex / totalWordsInBatch) * 85;
                     
-                    document.getElementById('player-wpm').innerText = liveWpm;
+                    if (document.getElementById('player-wpm')) document.getElementById('player-wpm').innerText = liveWpm;
                     if(document.getElementById('my-car')) document.getElementById('my-car').style.left = playerData.progressPercent + "%";
 
                     if (isOnlineMode) {
