@@ -103,14 +103,14 @@
         .lane-info .wpm-counter { color: var(--accent-color); font-weight: bold; }
         .car { font-size: 45px; position: absolute; left: 0; transition: left 0.1s linear; transform: scaleX(-1); width: 60px; text-align: center; z-index: 5; }
 
-        /* --- DESIGN PODIUM PERMANEN DI LAYAR --- */
+        /* --- DESIGN PODIUM DI ATAS TRAK --- */
         .live-podium-container {
             display: flex;
             justify-content: center;
             align-items: flex-end;
             gap: 20px;
-            margin: 25px 0;
-            height: 220px;
+            margin-bottom: 20px;
+            height: 200px;
             background-color: rgba(30, 41, 59, 0.5);
             border: 2px solid rgba(100, 116, 139, 0.2);
             border-radius: 12px;
@@ -135,9 +135,9 @@
         .podium-slot .car-parked { font-size: 40px; transform: scaleX(-1); min-height: 50px; margin-bottom: 5px; }
         .podium-slot .meta-txt { font-size: 0.8rem; line-height: 1.3; color: #fff; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; width: 90%; word-break: break-all; }
         
-        .podium-slot.first { height: 140px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
-        .podium-slot.second { height: 100px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
-        .podium-slot.third { height: 70px; background: linear-gradient(135deg, #b45309, #78350f); }
+        .podium-slot.first { height: 130px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+        .podium-slot.second { height: 95px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
+        .podium-slot.third { height: 65px; background: linear-gradient(135deg, #b45309, #78350f); }
 
         .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
         .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
@@ -295,23 +295,7 @@
             <div class="countdown-timer" id="countdown-number">:05</div>
         </div>
 
-        <!-- LINTASAN BALAP -->
-        <div class="track-container">
-            <div class="status-display">
-                <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
-                <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
-                    <button class="btn btn-danger" style="padding: 5px 12px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
-                </div>
-            </div>
-            
-            <div class="track-lanes-wrapper" id="lanes-container">
-                <!-- Baris lintasan diisi secara dinamis -->
-            </div>
-        </div>
-
-        <!-- GAMBAR VISUAL PODIUM STABLE DI HALAMAN UTAMA -->
+        <!-- ─── SEKARANG PODIUM UTAMA PINDAH KE ATAS LINTASAN TRAK ─── -->
         <div class="live-podium-container">
             <!-- JUARA 2 -->
             <div class="podium-slot second">
@@ -330,6 +314,22 @@
                 <div id="podium-3-meta" class="meta-txt">Menunggu...</div>
                 <div id="podium-3-car" class="car-parked">🏁</div>
                 <div style="color: #1e293b; margin-top: 5px;">3rd Place</div>
+            </div>
+        </div>
+
+        <!-- LINTASAN BALAP -->
+        <div class="track-container">
+            <div class="status-display">
+                <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
+                <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
+                    <button class="btn btn-danger" style="padding: 5px 12px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
+                </div>
+            </div>
+            
+            <div class="track-lanes-wrapper" id="lanes-container">
+                <!-- Baris lintasan diisi secara dinamis -->
             </div>
         </div>
 
@@ -442,7 +442,7 @@
             });
 
             socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
-                resetPodiumUI(); // Bersihkan podium lama
+                resetPodiumUI(); 
                 document.getElementById('results-modal').classList.remove('active');
                 document.getElementById('view-scores-btn').style.display = 'none';
                 wordsList = incomingWords;
@@ -454,7 +454,7 @@
             socket.on('receiveFinalData', (serverResults) => {
                 finishedRacersData = serverResults;
                 updateLivePodiumUI();
-                document.getElementById('view-scores-btn').style.display = 'block'; // Munculkan tombol popup skor
+                document.getElementById('view-scores-btn').style.display = 'block'; 
             });
 
             socket.on('hostChanged', (newHostId) => {
@@ -473,7 +473,6 @@
             socket.on('errorMsg', (msg) => { alert(msg); leaveRoomAction(); });
         }
 
-        // FUNGSI KICK PLAYER (DIPICU OLEH HOST)
         function kickRacer(targetId) {
             if(!isServerHost || !isOnlineMode) return;
             if(confirm("Yakin mau mengeluarkan player ini, Bos?")) {
@@ -623,7 +622,6 @@
                 const isMe = p.id === socket.id;
                 const activeCarEmoji = p.carEmoji || "🚗";
                 
-                // Siapkan tombol Kick jika yang melihat halaman ini adalah Host & baris tersebut milik player lain
                 let kickBtnHtml = "";
                 if (isServerHost && !isMe) {
                     kickBtnHtml = `<button class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="kickRacer('${p.id}')">Kick ❌</button>`;
@@ -641,7 +639,6 @@
             });
         }
 
-        // FUNSI KONTROL VISUAL PODIUM LIVE LANGSUNG DI HALAMAN WEB
         function updateLivePodiumUI() {
             if (finishedRacersData[0]) {
                 document.getElementById('podium-1-meta').innerText = `${finishedRacersData[0].name}\n(${finishedRacersData[0].wpm} WPM)`;
@@ -663,7 +660,6 @@
             document.getElementById('podium-3-meta').innerText = "Menunggu..."; document.getElementById('podium-3-car').innerText = "🏁";
         }
 
-        // FUNGSI MEMBUKA POPUP PAPAN SKOR EVALUASI LENGKAP
         function openScoresModal() {
             const tbody = document.getElementById('leaderboard-rows-target');
             tbody.innerHTML = "";
@@ -794,7 +790,6 @@
                     }
                 }
 
-                // Pergerakan Bot Lokal Solo Mode
                 if (!isOnlineMode) {
                     activeBots.forEach((bot) => {
                         if (!bot.isFinished) {
