@@ -11,9 +11,16 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Ganti rute default agar melayani file index.html yang berada di direktori utama jika diperlukan
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 const raceRooms = {};
 
 io.on('connection', (socket) => {
+    console.log(`⚡ Racer Terhubung: ${socket.id}`);
+
     socket.on('updateStatus', ({ roomId, status }) => {
         const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
@@ -37,7 +44,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // LISTENER EVENT BARU: AKSI RESET DARURAT DI TENGAH MATCH OLEH HOST
     socket.on('abortMatchMidWay', ({ roomId }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -52,8 +58,6 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('roomData', room);
         }
     });
-
-    console.log(`⚡ Racer Terhubung: ${socket.id}`);
 
     socket.on('createRoom', ({ playerName }) => {
         const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -96,8 +100,8 @@ io.on('connection', (socket) => {
     socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
-            room.isTableOpen = isOpen; 
-            socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); 
+            room.isTableOpen = isOpen;
+            socket.to(roomId).emit('tablePanelToggled', { isOpen });
         }
     });
 
@@ -117,17 +121,16 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('triggerStart', ({ roomId, wordsList }) => {
+    socket.on('triggerCountdownServer', ({ roomId, wordsList }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
             room.results = [];
             Object.keys(room.players).forEach(pId => {
+                room.players[pId].isFinished = false;
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
-                room.players[pId].isFinished = false;
             });
             io.to(roomId).emit('gameCountdownStart', { wordsList });
-            io.to(roomId).emit('receiveFinalData', []);
         }
     });
 
@@ -162,11 +165,23 @@ io.on('connection', (socket) => {
             const room = raceRooms[roomId];
             if (room && room.players[socket.id]) {
                 delete room.players[socket.id];
-                if (Object.keys(room.players).length === 0) delete raceRooms[roomId];
-                else io.to(roomId).emit('roomData', room);
+                if (Object.keys(room.players).length === 0) {
+                    delete raceRooms[roomId];
+                } else if (room.hostId === socket.id) {
+                    const newHostId = Object.keys(room.players)[0];
+                    room.hostId = newHostId;
+                    io.to(roomId).emit('hostChanged', newHostId);
+                    io.to(roomId).emit('roomData', room);
+                } else {
+                    io.to(roomId).emit('roomData', room);
+                }
             }
         });
+        console.log(`❌ Racer Terputus: ${socket.id}`);
     });
 });
 
-server.listen(3000, () => console.log(`🚀 Sirkuit Balap di Port *:3000`));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 Sirkuit Cyber Race Aktif di http://localhost:${PORT}`);
+});
