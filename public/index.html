@@ -81,7 +81,8 @@
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             overflow: hidden;
-            display: none;
+            display: flex;
+            flex-direction: column;
             z-index: 2000;
             border: 2px solid var(--accent-color);
             resize: both;
@@ -89,12 +90,11 @@
             min-height: 250px;
             max-width: 600px;
             max-height: 700px;
-            transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease;
         }
         
         .chat-top-container.chat-minimized {
             height: 42px !important;
-            width: 250px !important;
+            width: 280px !important;
             resize: none !important;
         }
 
@@ -109,12 +109,14 @@
             align-items: center;
             cursor: move;
             user-select: none;
-            height: 22px;
+            height: 42px;
+            box-sizing: border-box;
         }
         .chat-collapsible-body {
             display: flex;
             flex-direction: column;
-            height: calc(100% - 43px);
+            height: calc(100% - 42px);
+            width: 100%;
         }
         .chat-messages {
             padding: 12px;
@@ -250,10 +252,14 @@
         .kick-btn { background: none; border: none; color: var(--wrong-color); font-weight: bold; cursor: pointer; padding: 0 5px; font-size: 0.9rem; margin-left: 5px; transition: transform 0.1s; }
         .kick-btn:hover { transform: scale(1.2); }
         
+        /* Badge Status Ready di Lintasan */
+        .ready-badge { padding: 2px 6px; font-size: 0.75rem; font-weight: bold; border-radius: 4px; margin-left: 8px; text-transform: uppercase; }
+        .badge-is-ready { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid #4ade80; }
+        .badge-not-ready { background-color: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
+
         .car-node-wrapper { position: absolute; left: 0; bottom: 5px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 100px; z-index: 5; }
         .car { font-size: 45px; transform: scaleX(-1); width: 100%; text-align: center; line-height: 1; }
         
-        /* BUBBLE CHAT DESIGN */
         .car-bubble { 
             position: absolute; 
             bottom: 52px; 
@@ -298,7 +304,6 @@
             display: flex; 
             flex-direction: column; 
             gap: 8px; 
-            transition: transform 0.3s ease; 
             width: 100%;
         }
         .word-line { 
@@ -336,7 +341,6 @@
         .leaderboard-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: left; }
         .leaderboard-table th, .leaderboard-table td { padding: 10px; border-bottom: 1px solid rgba(100,116,139,0.3); }
 
-        /* GARASI VEHICLE GRID POPUP */
         .garage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; margin-top: 20px; max-height: 320px; overflow-y: auto; padding: 10px; }
         .garage-item { background: #0f172a; border: 2px solid #475569; border-radius: 10px; padding: 15px 5px; cursor: pointer; text-align: center; transition: all 0.2s ease; }
         .garage-item:hover { border-color: var(--accent-color); transform: translateY(-3px); background: #1e293b; }
@@ -360,6 +364,8 @@
             100% { transform: translate(1px, -2px) rotate(0deg); }
         }
         .shake-active { animation: screenShake 0.15s cubic-bezier(.36,.07,.19,.97) both; }
+        
+        .unready-txt-alert { color: #f87171 !important; font-weight: bold; text-shadow: 0 0 10px rgba(248,113,113,0.3); }
     </style>
 </head>
 <body>
@@ -526,7 +532,7 @@
         <div class="chat-top-container chat-minimized" id="chat-sidebar-panel">
             <div class="chat-header" id="chat-draggable-header">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span id="chat-header-title">💬 live chat woi (Locked 🔒)</span>
+                    <span id="chat-header-title">💬 Live Chat Balapan</span>
                     <button id="chat-mute-btn" class="mute-btn" onclick="toggleMuteSoundAction(event)">🔊</button>
                 </div>
                 <button id="chat-toggle-btn" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="toggleChatPanelAction()">Maximize</button>
@@ -555,8 +561,8 @@
                 <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
                 <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
-                    <button class="btn btn-danger" style="padding: 5px 12px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
+                    <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
+                    <button class="btn btn-danger" style="padding: 6px 14px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
                 </div>
             </div>
             <div class="track-lanes-wrapper" id="lanes-container"></div>
@@ -585,6 +591,9 @@
         <div class="action-area">
             <div class="input-container">
                 <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu Balapan Dimulai...">
+                
+                <button id="ready-toggle-btn" class="btn btn-secondary" style="display: none;" onclick="toggleReadyStatusAction()">🔴 BELUM READY</button>
+                
                 <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
                 
                 <button id="mid-game-reset-btn" class="btn btn-danger" onclick="abortAndResetMatchAction()" style="display: none;">Reset Tengah Match 🔄</button>
@@ -691,7 +700,7 @@
         let finishedRacersData = [];
         let activeBots = [];
         let isChatMuted = false;
-        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0, carEmoji: "🚗", isOnline: "online" };
+        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0, carEmoji: "🚗", isOnline: "online", isReady: false };
 
         let urlRoomCode = "";
         let audioCtx = null;
@@ -742,6 +751,7 @@
             document.getElementById('main-arena').style.display = 'block';
             document.getElementById('chat-sidebar-panel').style.display = 'block';
             document.getElementById('bot-management-row').style.display = 'table-row';
+            document.getElementById('ready-toggle-btn').style.display = 'none';
             applyHostAuthorizationUI();
             renderLanesLocal();
         }
@@ -796,11 +806,23 @@
                 document.getElementById('room-id-badge').style.display = 'block';
                 document.getElementById('room-code-txt').innerText = roomId;
                 document.getElementById('chat-sidebar-panel').style.display = 'block';
+                
+                // Jika Guest, munculkan tombol Ready
+                const rdyBtn = document.getElementById('ready-toggle-btn');
+                if(!isServerHost) {
+                    rdyBtn.style.display = 'inline-block';
+                    playerData.isReady = false;
+                    rdyBtn.className = "btn btn-danger";
+                    rdyBtn.innerText = "🔴 BELUM READY";
+                } else {
+                    rdyBtn.style.display = 'none';
+                }
+
                 applyHostAuthorizationUI();
                 broadcastCarUpdate();
             });
 
-            socket.on('roomData', (roomObject) => { renderLanesOnline(roomObject.players); });
+            socket.on('roomData', (roomObject) => { renderLanesOnline(roomObject.players, roomObject.hostId); });
 
             socket.on('settingsUpdated', (settings) => {
                 document.getElementById('game-mode').value = settings.gameMode;
@@ -818,6 +840,7 @@
 
             socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
                 clearMatchStateData();
+                document.getElementById('ready-toggle-btn').style.display = 'none'; // Sembunyikan tombol saat balapan berjalan
                 wordsList = incomingWords;
                 totalWordsInBatch = wordsList.length;
                 renderWords();
@@ -825,10 +848,17 @@
                 executeVisualCountdownSequence();
             });
 
+            // Gagal Mulai karena ada yang belum ready (Notifikasi Otomatis di Kotak Soal)
+            socket.on('gagalMulai', ({ unreadyNames }) => {
+                const namesStr = unreadyNames.join(', ');
+                const wrapper = document.getElementById('words-wrapper');
+                wrapper.innerHTML = `<span class="unready-txt-alert">❌ Gagal Mulai! Player berikut belum Ready: <br>[ ${namesStr} ]</span>`;
+                triggerScreenShakeEffect();
+            });
+
             socket.on('forceResetMatch', () => {
                 clearMatchStateData();
                 document.getElementById('words-wrapper').innerText = "Match dibatalkan oleh Host.";
-                document.getElementById('words-wrapper').style.transform = "translateY(0px)";
             });
 
             socket.on('receiveFinalData', (serverResults) => {
@@ -854,7 +884,6 @@
                 chatContainer.appendChild(rowNode);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
                 
-                // FIXED: Pengirim mencocokkan ID bubble dengan ID unik track lane agar bubble si pengirim tetap muncul di layarnya sendiri
                 const targetBubbleId = `bubble-${senderId}`;
                 triggerTrackBubbleAnim(targetBubbleId, text);
             });
@@ -863,6 +892,7 @@
                 if(socket.id === newHostId) {
                     isServerHost = true;
                     alert("Lo ditunjuk jadi HOST Utama sekarang.");
+                    document.getElementById('ready-toggle-btn').style.display = 'none';
                     applyHostAuthorizationUI();
                 }
             });
@@ -873,6 +903,15 @@
             socket.on('performReset', () => {
                 clearMatchStateData();
                 document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
+                
+                const rdyBtn = document.getElementById('ready-toggle-btn');
+                if (!isServerHost) {
+                    rdyBtn.style.display = 'inline-block';
+                    playerData.isReady = false;
+                    rdyBtn.className = "btn btn-danger";
+                    rdyBtn.innerText = "🔴 BELUM READY";
+                }
+
                 if (isServerHost) {
                     const btn = document.getElementById('start-btn');
                     btn.innerText = "Mulai Balapan";
@@ -880,6 +919,21 @@
                     document.getElementById('replay-btn').style.display = "none";
                 }
             });
+        }
+
+        // TRIGGER TOMBOL READY/UNREADY
+        function toggleReadyStatusAction() {
+            if(!isOnlineMode || isServerHost) return;
+            playerData.isReady = !playerData.isReady;
+            const btn = document.getElementById('ready-toggle-btn');
+            if(playerData.isReady) {
+                btn.className = "btn btn-success";
+                btn.innerText = "🟢 UTAS/READY";
+            } else {
+                btn.className = "btn btn-danger";
+                btn.innerText = "🔴 BELUM READY";
+            }
+            socket.emit('toggleReady', { roomId: currentOnlineRoomId, isReady: playerData.isReady });
         }
 
         // DRAG CHAT WINDOW
@@ -965,11 +1019,9 @@
             chatWindow.classList.add('chat-minimized');
             document.getElementById('chat-collapsible-wrapper').style.display = 'none';
             document.getElementById('chat-toggle-btn').innerText = "Maximize";
-            document.getElementById('chat-header-title').innerText = "💬 live chat woi (Locked 🔒)";
         }
 
         function unlockAndOpenChatUI() {
-            document.getElementById('chat-header-title').innerText = "💬 live chat woi (Unlocked 🔓)";
             chatWindow.classList.remove('chat-minimized');
             document.getElementById('chat-collapsible-wrapper').style.display = 'flex';
             document.getElementById('chat-toggle-btn').innerText = "Minimalize";
@@ -1007,28 +1059,40 @@
 
         function renderLanesLocal() {
             const container = document.getElementById('lanes-container'); container.innerHTML = "";
-            container.appendChild(createLaneDOM(playerData.id, playerData.name, playerData.carEmoji, playerData.currentWpm, playerData.progressPercent, false, true, playerData.isOnline));
-            activeBots.forEach(bot => { container.appendChild(createLaneDOM(bot.id, bot.name, bot.carEmoji, bot.currentWpm, bot.progressPercent, true, false, bot.isOnline)); });
+            container.appendChild(createLaneDOM(playerData.id, playerData.name, playerData.carEmoji, playerData.currentWpm, playerData.progressPercent, false, true, playerData.isOnline, true, false));
+            activeBots.forEach(bot => { container.appendChild(createLaneDOM(bot.id, bot.name, bot.carEmoji, bot.currentWpm, bot.progressPercent, true, false, bot.isOnline, true, false)); });
         }
-        function renderLanesOnline(playersObj) {
+        
+        function renderLanesOnline(playersObj, hostId) {
             const container = document.getElementById('lanes-container'); container.innerHTML = "";
             Object.keys(playersObj).forEach(pId => {
                 const p = playersObj[pId]; const isMe = (pId === socket.id);
                 const status = p.isOnline || 'online';
-                container.appendChild(createLaneDOM(p.id, isMe ? `${p.name} (Lo)` : p.name, p.carEmoji, p.currentWpm, p.progressPercent, false, isMe, status));
+                const isHost = (pId === hostId);
+                container.appendChild(createLaneDOM(p.id, isMe ? `${p.name} (Lo)` : p.name, p.carEmoji, p.currentWpm, p.progressPercent, false, isMe, status, p.isReady, isHost));
             });
         }
 
-        function createLaneDOM(id, name, emoji, wpm, progress, isBotItem, isMe = false, status = 'online') {
+        function createLaneDOM(id, name, emoji, wpm, progress, isBotItem, isMe = false, status = 'online', isReady = false, isHost = false) {
             const lane = document.createElement('div');
             lane.className = "track-lane";
             let kickBtnHtml = (isOnlineMode && isServerHost && !isMe) ? `<button class="kick-btn" onclick="kickOnlinePlayerAction('${id}')">❌</button>` : "";
             const bubbleDomId = `bubble-${id}`;
             const dotClass = status === 'offline' ? 'offline' : 'online';
             
+            // Logika teks label ready/host
+            let readyLabel = "";
+            if (isOnlineMode) {
+                if (isHost) {
+                    readyLabel = `<span class="ready-badge" style="background-color:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid #38bdf8;">HOST</span>`;
+                } else {
+                    readyLabel = isReady ? `<span class="ready-badge badge-is-ready">READY</span>` : `<span class="ready-badge badge-not-ready">NOT READY</span>`;
+                }
+            }
+
             lane.innerHTML = `
                 <div class="lane-info">
-                    <span><span class="status-dot ${dotClass}"></span><strong>${name}</strong> ${kickBtnHtml}</span>
+                    <span><span class="status-dot ${dotClass}"></span><strong>${name}</strong> ${readyLabel} ${kickBtnHtml}</span>
                     <span class="wpm-counter"><span id="wpm-val-${id}">${wpm}</span> WPM</span>
                 </div>
                 <div class="car-node-wrapper" id="node-${id}" style="left: calc(${progress}% - ${progress > 0 ? (progress * 0.9) : 0}px);">
@@ -1094,12 +1158,15 @@
         }
 
         function renderWords() {
-            const wrapper = document.getElementById('words-wrapper'); wrapper.innerHTML = "";
-            wordLineMappings = []; currentActiveLineIndex = 0;
-            const lineView = document.getElementById('line-view-select').value;
+            const wrapper = document.getElementById('words-wrapper'); 
+            wrapper.innerHTML = "";
+            wordLineMappings = []; 
+            currentActiveLineIndex = 0;
             
+            const lineView = document.getElementById('line-view-select').value;
             let currentLineDiv = document.createElement('div');
-            currentLineDiv.className = "word-line"; wrapper.appendChild(currentLineDiv);
+            currentLineDiv.className = "word-line"; 
+            wrapper.appendChild(currentLineDiv);
             let currentLineIndices = [];
 
             if (lineView === 'all') {
@@ -1112,7 +1179,7 @@
                 });
                 wordLineMappings.push(currentLineIndices);
             } else {
-                const maxWordsPerLine = lineView === '1' ? 5 : (lineView === '2' ? 9 : 13);
+                const maxWordsPerLine = lineView === '1' ? 6 : (lineView === '2' ? 9 : 11);
                 
                 wordsList.forEach((word, idx) => {
                     if (currentLineIndices.length >= maxWordsPerLine) {
@@ -1130,6 +1197,23 @@
                     currentLineIndices.push(idx);
                 });
                 if(currentLineIndices.length > 0) wordLineMappings.push(currentLineIndices);
+            }
+            applyLineViewLimit();
+        }
+
+        function applyLineViewLimit() {
+            const lineView = document.getElementById('line-view-select').value;
+            if (lineView === 'all') return;
+            
+            const lines = document.getElementsByClassName('word-line');
+            const allowedLines = parseInt(lineView);
+            
+            for (let i = 0; i < lines.length; i++) {
+                if (i >= allowedLines) {
+                    lines[i].style.display = 'none';
+                } else {
+                    lines[i].style.display = 'block';
+                }
             }
         }
 
@@ -1235,12 +1319,36 @@
         }
 
         function handleAutoLineScrollingLogic() {
-            if(document.getElementById('line-view-select').value === 'all') return;
+            const lineView = document.getElementById('line-view-select').value;
+            if(lineView === 'all') return;
+            
             let targetLineIdx = -1;
-            for(let l=0; l<wordLineMappings.length; l++) { if(wordLineMappings[l].includes(currentWordIndex)) { targetLineIdx = l; break; } }
+            for(let l=0; l<wordLineMappings.length; l++) { 
+                if(wordLineMappings[l].includes(currentWordIndex)) { 
+                    targetLineIdx = l; 
+                    break; 
+                } 
+            }
+            
             if(targetLineIdx > currentActiveLineIndex) {
                 currentActiveLineIndex = targetLineIdx;
-                document.getElementById('words-wrapper').style.transform = `translateY(-${currentActiveLineIndex * 48}px)`;
+                const lines = document.getElementsByClassName('word-line');
+                const allowedLines = parseInt(lineView);
+
+                if(lines[0]) {
+                    lines[0].remove();
+                    currentActiveLineIndex--;
+                    wordLineMappings.shift();
+                }
+
+                const updatedLines = document.getElementsByClassName('word-line');
+                for (let i = 0; i < updatedLines.length; i++) {
+                    if (i < allowedLines) {
+                        updatedLines[i].style.display = 'block';
+                    } else {
+                        updatedLines[i].style.display = 'none';
+                    }
+                }
             }
         }
 
@@ -1302,7 +1410,6 @@
                 rowNode.innerHTML = `<div class="chat-msg-item"><strong>${playerData.name}</strong>${val}</div>`;
                 chatContainer.appendChild(rowNode); chatContainer.scrollTop = chatContainer.scrollHeight;
                 
-                // Fixed Solo Mode target ID matching format track lane
                 triggerTrackBubbleAnim("bubble-player", val);
             }
             inp.value = "";
