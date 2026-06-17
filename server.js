@@ -11,7 +11,6 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Ganti rute default agar melayani file index.html yang berada di direktori utama jika diperlukan
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -76,7 +75,7 @@ io.on('connection', (socket) => {
 
     socket.on('joinRoom', ({ roomId, playerName }) => {
         const room = raceRooms[roomId];
-        if (!room) return socket.emit('errorMsg', "❌ Kode Room tidak ditemukan, Bos!");
+        if (!room) return socket.emit('errorMsg', "❌ Kode Room tidak ditemukan!");
         
         room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", currentWpm: 0, progressPercent: 0, isFinished: false };
         socket.join(roomId);
@@ -91,7 +90,7 @@ io.on('connection', (socket) => {
         if (room && room.hostId === socket.id) {
             if (room.players[targetId]) {
                 delete room.players[targetId];
-                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sikit balap oleh Host!");
+                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan dari sirkuit oleh Host!");
                 io.to(roomId).emit('roomData', room);
             }
         }
