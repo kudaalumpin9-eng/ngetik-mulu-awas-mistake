@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Typing Race - Grand Championship V8</title>
+    <title>Cyber Typing Race - Grand Championship V10</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         .status-dot {
@@ -11,10 +11,11 @@
             width: 10px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 5px;
+            margin-right: 6px;
+            vertical-align: middle;
         }
-        .online { background-color: #4ade80; } 
-        .offline { background-color: #f87171; } 
+        .online { background-color: #4ade80; box-shadow: 0 0 8px #4ade80; } 
+        .offline { background-color: #f87171; box-shadow: 0 0 8px #f87171; } 
         
         :root {
             --bg-color: #0f172a;
@@ -69,7 +70,7 @@
             text-align: center;
         }
 
-        /* --- CHAT BOX FLOATING DESIGN (MODERN RIGHT-LEFT CHAT) --- */
+        /* --- CHAT BOX FLOATING DESIGN --- */
         .chat-top-container {
             position: fixed;
             bottom: 20px;
@@ -88,13 +89,13 @@
             min-height: 250px;
             max-width: 600px;
             max-height: 700px;
-            transition: height 0.2s ease, width 0.2s ease;
+            transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease;
         }
         
         .chat-top-container.chat-minimized {
-            height: 40px !important;
-            width: 240px !important;
-            resize: none;
+            height: 42px !important;
+            width: 250px !important;
+            resize: none !important;
         }
 
         .chat-header {
@@ -108,12 +109,12 @@
             align-items: center;
             cursor: move;
             user-select: none;
-            height: 20px;
+            height: 22px;
         }
         .chat-collapsible-body {
             display: flex;
             flex-direction: column;
-            height: calc(100% - 41px);
+            height: calc(100% - 43px);
         }
         .chat-messages {
             padding: 12px;
@@ -129,7 +130,6 @@
         .chat-messages::-webkit-scrollbar-track { background: #0f172a; }
         .chat-messages::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
 
-        /* Sisi Kanan/Kiri Bubble Chat */
         .chat-row { display: flex; width: 100%; }
         .chat-row.row-self { justify-content: flex-end; }
         .chat-row.row-other { justify-content: flex-start; }
@@ -155,7 +155,6 @@
         .chat-msg-item strong { display: block; font-size: 0.75rem; margin-bottom: 2px; color: #a5f3fc; }
         .row-self .chat-msg-item strong { color: #fef08a; }
 
-        /* Emoji Mini Picker Box */
         .chat-emoji-bar {
             display: flex;
             gap: 5px;
@@ -176,7 +175,7 @@
         .chat-input-wrapper { display: flex; border-top: 1px solid rgba(100,116,139,0.2); background: #111827; padding: 8px 12px; gap: 6px; align-items: center; }
         #chat-input-box { flex: 1; background: var(--bg-color); border: 1px solid var(--text-muted); color: var(--text-main); border-radius: 6px; padding: 8px; outline: none; font-size: 0.85rem; }
         
-        /* --- ACCORDION PANELS PENGATURAN --- */
+        /* --- ACCORDION PANELS --- */
         .accordion-wrapper {
             width: 100%;
             max-width: 850px;
@@ -205,7 +204,7 @@
         select, input[type="number"] { padding: 8px 12px; background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 6px; outline: none; }
         .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; }
 
-        /* --- LAMPU COUNTDOWN MELAYANG / FLOATING --- */
+        /* --- LAMPU COUNTDOWN --- */
         .countdown-box { 
             display: none; 
             background: rgba(0, 0, 0, 0.95); 
@@ -229,10 +228,9 @@
         .countdown-text { color: #fff; font-size: 1.2rem; font-weight: bold; }
         .countdown-number { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
 
-        /* LIVE MATCH DURATION TIMER BANNER */
         .live-timer-banner { display: none; background: linear-gradient(90deg, #1e293b, #0f172a); border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px 25px; color: #fff; font-size: 1.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 10px auto; width: fit-content; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
 
-        /* --- STYLING PODIUM LENGKAP --- */
+        /* --- PODIUM --- */
         .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 250px; background-color: rgba(30, 41, 59, 0.5); border: 2px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; transition: max-height 0.4s ease-in-out, padding 0.4s, opacity 0.3s; overflow: hidden; opacity: 1; }
         .live-podium-container.podium-collapsed { height: 0 !important; max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; border: none !important; opacity: 0; pointer-events: none; }
         .podium-slot { display: flex; flex-direction: column; align-items: center; width: 150px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; position: relative; }
@@ -243,7 +241,7 @@
         .podium-slot.second { height: 125px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
         .podium-slot.third { height: 95px; background: linear-gradient(135deg, #b45309, #78350f); }
 
-        /* --- LINTASAN BALAP (PERBAIKAN FIT BOUNDS FINISH) --- */
+        /* --- LINTASAN BALAP --- */
         .track-container { background-color: var(--card-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 850px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box; transition: transform 0.1s ease; }
         .track-lanes-wrapper { display: flex; flex-direction: column; gap: 5px; width: 100%; }
         .track-lane { height: 110px; border-bottom: 2px dashed var(--text-muted); position: relative; display: flex; align-items: center; justify-content: space-between; padding-right: 15px; width: 100%; box-sizing: border-box; }
@@ -252,10 +250,10 @@
         .kick-btn { background: none; border: none; color: var(--wrong-color); font-weight: bold; cursor: pointer; padding: 0 5px; font-size: 0.9rem; margin-left: 5px; transition: transform 0.1s; }
         .kick-btn:hover { transform: scale(1.2); }
         
-        /* Menggunakan calc() agar posisi maksimal 100% dikurangi lebar elemen mobil, mencegah keluar batas sirkuit */
         .car-node-wrapper { position: absolute; left: 0; bottom: 5px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 100px; z-index: 5; }
-        .car { font-size: 45px; transform: scaleX(-1); width: 100%; text-align: center; }
+        .car { font-size: 45px; transform: scaleX(-1); width: 100%; text-align: center; line-height: 1; }
         
+        /* BUBBLE CHAT DESIGN */
         .car-bubble { 
             position: absolute; 
             bottom: 52px; 
@@ -282,7 +280,7 @@
         .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
         .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
 
-        /* --- DISPLAY KATA FULL KONTENER & PREVENT OVERFLOW --- */
+        /* --- DISPLAY KATA FULL KONTENER --- */
         .text-display { 
             background-color: var(--bg-color); 
             border-radius: 8px; 
@@ -343,8 +341,10 @@
         .garage-item { background: #0f172a; border: 2px solid #475569; border-radius: 10px; padding: 15px 5px; cursor: pointer; text-align: center; transition: all 0.2s ease; }
         .garage-item:hover { border-color: var(--accent-color); transform: translateY(-3px); background: #1e293b; }
         .garage-item.selected-car { border-color: var(--correct-color); background: rgba(74, 222, 128, 0.1); }
-        .garage-item .car-img { font-size: 2.2rem; margin-bottom: 5px; display: block; }
+        .garage-item .car-img { font-size: 2.2rem; margin-bottom: 5px; display: block; line-height: 1; }
         .garage-item .car-label { font-size: 0.8rem; font-weight: bold; color: var(--text-main); }
+
+        .mute-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 0 5px; color: var(--accent-color); }
 
         @keyframes screenShake {
             0% { transform: translate(1px, 1px) rotate(0deg); }
@@ -379,6 +379,36 @@
             <br>
             <input type="text" id="roomcode-input" class="lobby-input" placeholder="Masukkan KODE ROOM Mabar..." style="width: 50%; text-transform: uppercase;">
             <button class="btn btn-secondary" onclick="joinOnlineRoom()">Join Kamar</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="sharelink-join-modal">
+        <div class="tournament-results" style="max-width: 500px;">
+            <h3 style="color: var(--accent-color); margin-top: 0;">🏎️ Bergabung ke Kamar Balap 🏎️</h3>
+            <p>Seseorang mengundang lo balapan! Isi nama dan siapkan kendaraan lo:</p>
+            
+            <input type="text" id="sharelink-nickname-input" class="lobby-input" placeholder="Masukkan Nama Balap..." value="dimas" maxlength="12" style="width: 90%; border: 2px solid var(--accent-color);">
+            
+            <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">Pilih Mesin Kendaraan:</p>
+            <div class="garage-grid" id="sharelink-garage-grid">
+                <div class="garage-item selected-car" id="share-car-1" onclick="selectCarFromSharePopup('🚗', 'share-car-1')">
+                    <span class="car-img">🚗</span><span class="car-label">Sedan Merah</span>
+                </div>
+                <div class="garage-item" id="share-car-2" onclick="selectCarFromSharePopup('🏎️', 'share-car-2')">
+                    <span class="car-img">🏎️</span><span class="car-label">Mobil F1</span>
+                </div>
+                <div class="garage-item" id="share-car-3" onclick="selectCarFromSharePopup('🚓', 'share-car-3')">
+                    <span class="car-img">🚓</span><span class="car-label">Mobil Polisi</span>
+                </div>
+                <div class="garage-item" id="share-car-4" onclick="selectCarFromSharePopup('🚀', 'share-car-4')">
+                    <span class="car-img">🚀</span><span class="car-label">Roket</span>
+                </div>
+                <div class="garage-item" id="share-car-5" onclick="selectCarFromSharePopup('🛸', 'share-car-5')">
+                    <span class="car-img">🛸</span><span class="car-label">UFO</span>
+                </div>
+            </div>
+            <br>
+            <button class="btn btn-success" style="width: 100%; font-size: 1.1rem;" onclick="confirmJoinViaShareLink()">GAS MASUK SIRKUIT! 🏁</button>
         </div>
     </div>
 
@@ -460,7 +490,7 @@
                             <span id="current-car-preview" style="font-size:1.4rem; margin-left:12px; vertical-align:middle;">🚗</span>
                         </td>
                     </tr>
-                    <tr id="bot-management-row">
+                    <tr id="bot-management-row" style="display: none;">
                         <td>Manajemen Bot Lawan</td>
                         <td>
                             <button id="add-bot-btn" class="btn btn-secondary" onclick="addBot()" style="padding: 5px 12px; font-size: 0.85rem;">+ Tambah Bot</button>
@@ -496,7 +526,8 @@
         <div class="chat-top-container chat-minimized" id="chat-sidebar-panel">
             <div class="chat-header" id="chat-draggable-header">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span id="chat-header-title">💬 Live Chat Room (Locked 🔒)</span>
+                    <span id="chat-header-title">💬 live chat woi (Locked 🔒)</span>
+                    <button id="chat-mute-btn" class="mute-btn" onclick="toggleMuteSoundAction(event)">🔊</button>
                 </div>
                 <button id="chat-toggle-btn" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="toggleChatPanelAction()">Maximize</button>
             </div>
@@ -578,10 +609,10 @@
                     <span class="car-img">🚓</span><span class="car-label">Mobil Polisi</span>
                 </div>
                 <div class="garage-item" id="car-item-4" onclick="selectCarFromGarage('🚀', 'car-item-4')">
-                    <span class="car-img">🚀</span><span class="car-label">Roket Gede</span>
+                    <span class="car-img">🚀</span><span class="car-label">Roket</span>
                 </div>
                 <div class="garage-item" id="car-item-5" onclick="selectCarFromGarage('🛸', 'car-item-5')">
-                    <span class="car-img">🛸</span><span class="car-label">UFO Kuno</span>
+                    <span class="car-img">🛸</span><span class="car-label">UFO</span>
                 </div>
                 <div class="garage-item" id="car-item-6" onclick="selectCarFromGarage('🏍️', 'car-item-6')">
                     <span class="car-img">🏍️</span><span class="car-label">Motor GP</span>
@@ -589,14 +620,20 @@
                 <div class="garage-item" id="car-item-7" onclick="selectCarFromGarage('🚚', 'car-item-7')">
                     <span class="car-img">🚚</span><span class="car-label">Truk Oleng</span>
                 </div>
-                <div class="garage-item" id="car-item-8" onclick="selectCarFromGarage('坦克', 'car-item-8')">
+                <div class="garage-item" id="car-item-8" onclick="selectCarFromGarage('🛞', 'car-item-8')">
                     <span class="car-img">🛞</span><span class="car-label">Monster Truck</span>
                 </div>
-                <div class="garage-item" id="car-item-9" onclick="selectCarFromGarage('✈️', 'car-item-9')">
-                    <span class="car-img">✈️</span><span class="car-label">Jet Tempur</span>
+                <div class="garage-item" id="car-item-9" onclick="selectCarFromGarage('🚇', 'car-item-9')">
+                    <span class="car-img">🚇</span><span class="car-label">Kereta Api</span>
                 </div>
-                <div class="garage-item" id="car-item-10" onclick="selectCarFromGarage('skateboard', 'car-item-10')">
-                    <span class="car-img">🛹</span><span class="car-label">Skateboard</span>
+                <div class="garage-item" id="car-item-10" onclick="selectCarFromGarage('✈️', 'car-item-10')">
+                    <span class="car-img">✈️</span><span class="car-label">Pesawat Jet</span>
+                </div>
+                <div class="garage-item" id="car-item-11" onclick="selectCarFromGarage('🛩️', 'car-item-11')">
+                    <span class="car-img">🛩️</span><span class="car-label">Helikopter</span>
+                </div>
+                <div class="garage-item" id="car-item-12" onclick="selectCarFromGarage('🚲', 'car-item-12')">
+                    <span class="car-img">🚲</span><span class="car-label">Sepeda BMX</span>
                 </div>
             </div>
             <br>
@@ -626,7 +663,7 @@
 
     <script>
         const easyWords = [
-            "bisa", "buku", "pintu", "rumah", "dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "saya", "kamu", "akan", "dapat", "yang", "dari", "pada", "ke", "ini", "itu", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "dengan", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan"
+            "bisa", "buku", "pintu", "rumah", "dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "saya", "kamu", "akan", "dapat", "yang", "dari", "pada", "ke", "ini", "itu", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "with", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan"
         ];
         
         const hardWords = [
@@ -653,12 +690,16 @@
         let matchDurationTimeout;
         let finishedRacersData = [];
         let activeBots = [];
-        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0, carEmoji: "🚗" };
+        let isChatMuted = false;
+        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0, carEmoji: "🚗", isOnline: "online" };
 
+        let urlRoomCode = "";
         let audioCtx = null;
+        
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         
         function playSound(type) {
+            if (type === 'chat' && isChatMuted) return;
             try {
                 initAudio(); if (!audioCtx) return;
                 const osc = audioCtx.createOscillator();
@@ -686,7 +727,12 @@
             } catch(e) {}
         }
 
-        // ENTRY LOGIC
+        function toggleMuteSoundAction(e) {
+            e.stopPropagation();
+            isChatMuted = !isChatMuted;
+            document.getElementById('chat-mute-btn').innerText = isChatMuted ? "🔇" : "🔊";
+        }
+
         function startSinglePlayerMode() {
             const nickname = document.getElementById('nickname-input').value.trim() || "RacerSolo";
             playerData.name = nickname;
@@ -707,6 +753,13 @@
             socket.emit('createRoom', { playerName: nickname });
         }
 
+        document.addEventListener("visibilitychange", () => {
+            if (!isOnlineMode) return;
+            const status = document.hidden ? 'offline' : 'online';
+            playerData.isOnline = status;
+            socket.emit('updateStatus', { roomId: currentOnlineRoomId, status: status });
+        });
+
         function joinOnlineRoom() {
             const nickname = document.getElementById('nickname-input').value.trim() || "GuestRacer";
             const code = document.getElementById('roomcode-input').value.trim().toUpperCase();
@@ -716,7 +769,23 @@
             socket.emit('joinRoom', { roomId: code, playerName: nickname });
         }
 
+        function selectCarFromSharePopup(emoji, elementId) {
+            document.querySelectorAll('#sharelink-join-modal .garage-item').forEach(el => el.classList.remove('selected-car'));
+            document.getElementById(elementId).classList.add('selected-car');
+            playerData.carEmoji = emoji;
+            document.getElementById('current-car-preview').innerText = emoji;
+        }
+
+        function confirmJoinViaShareLink() {
+            const nickname = document.getElementById('sharelink-nickname-input').value.trim() || "dimas";
+            playerData.name = nickname;
+            document.getElementById('sharelink-join-modal').classList.remove('active');
+            initSocketConnection();
+            socket.emit('joinRoom', { roomId: urlRoomCode, playerName: nickname });
+        }
+
         function initSocketConnection() {
+            if (socket) return;
             socket = io();
             socket.on('joinSuccess', ({ roomId, isHost }) => {
                 isOnlineMode = true;
@@ -752,8 +821,6 @@
                 wordsList = incomingWords;
                 totalWordsInBatch = wordsList.length;
                 renderWords();
-                
-                // FORCE LOCK & MINIMIZE CHAT SAAT GAME MULAI
                 forceLockAndCloseChatUI();
                 executeVisualCountdownSequence();
             });
@@ -778,7 +845,6 @@
                 
                 const rowNode = document.createElement('div');
                 rowNode.className = isMe ? "chat-row row-self" : "chat-row row-other";
-                
                 rowNode.innerHTML = `
                     <div class="chat-msg-item">
                         <strong>${sender}</strong>
@@ -788,7 +854,8 @@
                 chatContainer.appendChild(rowNode);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
                 
-                const targetBubbleId = isMe ? "bubble-player" : `bubble-${senderId}`;
+                // FIXED: Pengirim mencocokkan ID bubble dengan ID unik track lane agar bubble si pengirim tetap muncul di layarnya sendiri
+                const targetBubbleId = `bubble-${senderId}`;
                 triggerTrackBubbleAnim(targetBubbleId, text);
             });
 
@@ -815,13 +882,13 @@
             });
         }
 
-        // FLOATING DRAG HANDLING
+        // DRAG CHAT WINDOW
         const chatWindow = document.getElementById("chat-sidebar-panel");
         const chatHeader = document.getElementById("chat-draggable-header");
         let isDraggingChat = false; let chatOffsetX, chatOffsetY;
 
         chatHeader.addEventListener("mousedown", (e) => {
-            if (e.target.tagName === "BUTTON") return;
+            if (e.target.tagName === "BUTTON" || e.target.classList.contains('mute-btn')) return;
             isDraggingChat = true;
             chatOffsetX = e.clientX - chatWindow.offsetLeft;
             chatOffsetY = e.clientY - chatWindow.offsetTop;
@@ -846,6 +913,20 @@
             document.getElementById('row-word-count').style.display = mode === 'words' ? 'table-row' : 'none';
         }
 
+        function broadcastSettings() {
+            if (!isOnlineMode || !isServerHost) return;
+            socket.emit('updateSettingsServer', {
+                roomId: currentOnlineRoomId,
+                gameMode: document.getElementById('game-mode').value,
+                wordTarget: document.getElementById('word-target-input').value,
+                timeSelect: document.getElementById('time-select').value,
+                lineView: document.getElementById('line-view-select').value,
+                difficulty: document.getElementById('difficulty-select').value,
+                usePunctuation: document.getElementById('punctuation-toggle').checked,
+                useCapitalize: document.getElementById('capitalize-toggle').checked
+            });
+        }
+
         function toggleAccordionAction() {
             const panel = document.getElementById('accordion-content-body');
             const btn = document.getElementById('accordion-toggle-btn');
@@ -864,9 +945,8 @@
             else { panel.classList.add('collapsed'); btn.innerText = "Buka Pengaturan ▼"; }
         }
 
-        // CHAT INTERACTION (MINIMIZE HANYA SEBARIS SAJA)
         function toggleChatPanelAction() {
-            if(playerData.gameActiveRun && !playerData.isFinished) return; // Kunci total jika game sedang jalan
+            if(playerData.gameActiveRun && !playerData.isFinished) return;
             const wrapper = document.getElementById('chat-collapsible-wrapper');
             const btn = document.getElementById('chat-toggle-btn');
             
@@ -885,11 +965,11 @@
             chatWindow.classList.add('chat-minimized');
             document.getElementById('chat-collapsible-wrapper').style.display = 'none';
             document.getElementById('chat-toggle-btn').innerText = "Maximize";
-            document.getElementById('chat-header-title').innerText = "💬 Live Chat Room (Locked 🔒)";
+            document.getElementById('chat-header-title').innerText = "💬 live chat woi (Locked 🔒)";
         }
 
         function unlockAndOpenChatUI() {
-            document.getElementById('chat-header-title').innerText = "💬 Live Chat Room (Unlocked 🔓)";
+            document.getElementById('chat-header-title').innerText = "💬 live chat woi (Unlocked 🔓)";
             chatWindow.classList.remove('chat-minimized');
             document.getElementById('chat-collapsible-wrapper').style.display = 'flex';
             document.getElementById('chat-toggle-btn').innerText = "Minimalize";
@@ -901,7 +981,6 @@
             input.focus();
         }
 
-        // POPUP GARASI MODAL LOGIC
         function openGarageModal() { document.getElementById('garage-modal').classList.add('active'); }
         function closeGarageModal() { document.getElementById('garage-modal').classList.remove('active'); }
         function selectCarFromGarage(emoji, elementId) {
@@ -916,58 +995,44 @@
         function togglePodiumView() { document.getElementById('live-podium-widget').classList.toggle('podium-collapsed'); }
         function broadcastCarUpdate() { if(isOnlineMode) socket.emit('updateCar', { roomId: currentOnlineRoomId, carEmoji: playerData.carEmoji }); }
 
-        function broadcastSettings() {
-            if(!isOnlineMode || !isServerHost) return;
-            socket.emit('updateSettings', {
-                roomId: currentOnlineRoomId,
-                settings: {
-                    gameMode: document.getElementById('game-mode').value,
-                    wordTarget: parseInt(document.getElementById('word-target-input').value) || 25,
-                    timeSelect: document.getElementById('time-select').value,
-                    lineView: document.getElementById('line-view-select').value,
-                    difficulty: document.getElementById('difficulty-select').value,
-                    usePunctuation: document.getElementById('punctuation-toggle').checked,
-                    useCapitalize: document.getElementById('capitalize-toggle').checked
-                }
-            });
-        }
-
         function addBot() {
             if(activeBots.length >= 4) return alert("Maksimal lintasan menampung 4 Bot!");
             const id = 'bot_' + Math.random().toString(36).substring(2,5);
             const names = ["Bot_Schumacher", "Bot_Hamilton", "Bot_Verstappen", "Bot_Toretto"];
             const speed = Math.floor(Math.random() * 20) + 45; 
-            activeBots.push({ id, name: names[activeBots.length % names.length], carEmoji: "🤖", baseWpm: speed, currentWpm: 0, progressPercent: 0, isFinished: false });
+            activeBots.push({ id, name: names[activeBots.length % names.length], carEmoji: "🤖", baseWpm: speed, currentWpm: 0, progressPercent: 0, isFinished: false, isOnline: "online" });
             renderLanesLocal();
         }
         function removeBot() { activeBots.pop(); renderLanesLocal(); }
 
         function renderLanesLocal() {
             const container = document.getElementById('lanes-container'); container.innerHTML = "";
-            container.appendChild(createLaneDOM(playerData.id, playerData.name, playerData.carEmoji, playerData.currentWpm, playerData.progressPercent, false));
-            activeBots.forEach(bot => { container.appendChild(createLaneDOM(bot.id, bot.name, bot.carEmoji, bot.currentWpm, bot.progressPercent, true)); });
+            container.appendChild(createLaneDOM(playerData.id, playerData.name, playerData.carEmoji, playerData.currentWpm, playerData.progressPercent, false, true, playerData.isOnline));
+            activeBots.forEach(bot => { container.appendChild(createLaneDOM(bot.id, bot.name, bot.carEmoji, bot.currentWpm, bot.progressPercent, true, false, bot.isOnline)); });
         }
         function renderLanesOnline(playersObj) {
             const container = document.getElementById('lanes-container'); container.innerHTML = "";
             Object.keys(playersObj).forEach(pId => {
                 const p = playersObj[pId]; const isMe = (pId === socket.id);
-                container.appendChild(createLaneDOM(p.id, isMe ? `${p.name} (Lo)` : p.name, p.carEmoji, p.currentWpm, p.progressPercent, false, isMe));
+                const status = p.isOnline || 'online';
+                container.appendChild(createLaneDOM(p.id, isMe ? `${p.name} (Lo)` : p.name, p.carEmoji, p.currentWpm, p.progressPercent, false, isMe, status));
             });
         }
 
-        function createLaneDOM(id, name, emoji, wpm, progress, isBotItem, isMe = false) {
+        function createLaneDOM(id, name, emoji, wpm, progress, isBotItem, isMe = false, status = 'online') {
             const lane = document.createElement('div');
             lane.className = "track-lane";
             let kickBtnHtml = (isOnlineMode && isServerHost && !isMe) ? `<button class="kick-btn" onclick="kickOnlinePlayerAction('${id}')">❌</button>` : "";
+            const bubbleDomId = `bubble-${id}`;
+            const dotClass = status === 'offline' ? 'offline' : 'online';
             
-            // PERBAIKAN BOUNDS: Menggunakan calc() pada left style agar pas 100% dikurangi area mobil
             lane.innerHTML = `
                 <div class="lane-info">
-                    <span>🏎️ <strong>${name}</strong> ${kickBtnHtml}</span>
+                    <span><span class="status-dot ${dotClass}"></span><strong>${name}</strong> ${kickBtnHtml}</span>
                     <span class="wpm-counter"><span id="wpm-val-${id}">${wpm}</span> WPM</span>
                 </div>
                 <div class="car-node-wrapper" id="node-${id}" style="left: calc(${progress}% - ${progress > 0 ? (progress * 0.9) : 0}px);">
-                    <div class="car-bubble" id="bubble-${id}"></div>
+                    <div class="car-bubble" id="${bubbleDomId}"></div>
                     <div class="car">${emoji}</div>
                 </div>
             `;
@@ -978,7 +1043,7 @@
             const b = document.getElementById(bubbleId);
             if(b) {
                 b.innerText = text; b.classList.add('active');
-                clearTimeout(b.timerId); b.timerId = setTimeout(() => b.classList.remove('active'), 2000);
+                clearTimeout(b.timerId); b.timerId = setTimeout(() => b.classList.remove('active'), 2500);
             }
         }
 
@@ -1037,22 +1102,35 @@
             currentLineDiv.className = "word-line"; wrapper.appendChild(currentLineDiv);
             let currentLineIndices = [];
 
-            wordsList.forEach((word, idx) => {
-                const span = document.createElement('span');
-                span.className = idx === 0 ? "word current" : "word";
-                span.id = `word-${idx}`; span.innerText = word;
-                currentLineDiv.appendChild(span); currentLineIndices.push(idx);
-
-                if (lineView !== 'all') {
-                    const maxWordsPerLine = lineView === '1' ? 4 : (lineView === '2' ? 7 : 10);
-                    if (currentLineIndices.length >= maxWordsPerLine && idx < wordsList.length - 1) {
-                        wordLineMappings.push(currentLineIndices); currentLineIndices = [];
-                        currentLineDiv = document.createElement('div'); currentLineDiv.className = "word-line";
+            if (lineView === 'all') {
+                wordsList.forEach((word, idx) => {
+                    const span = document.createElement('span');
+                    span.className = idx === 0 ? "word current" : "word";
+                    span.id = `word-${idx}`; span.innerText = word;
+                    currentLineDiv.appendChild(span);
+                    currentLineIndices.push(idx);
+                });
+                wordLineMappings.push(currentLineIndices);
+            } else {
+                const maxWordsPerLine = lineView === '1' ? 5 : (lineView === '2' ? 9 : 13);
+                
+                wordsList.forEach((word, idx) => {
+                    if (currentLineIndices.length >= maxWordsPerLine) {
+                        wordLineMappings.push(currentLineIndices);
+                        currentLineIndices = [];
+                        currentLineDiv = document.createElement('div');
+                        currentLineDiv.className = "word-line";
                         wrapper.appendChild(currentLineDiv);
                     }
-                }
-            });
-            if(currentLineIndices.length > 0) wordLineMappings.push(currentLineIndices);
+                    
+                    const span = document.createElement('span');
+                    span.className = idx === 0 ? "word current" : "word";
+                    span.id = `word-${idx}`; span.innerText = word;
+                    currentLineDiv.appendChild(span);
+                    currentLineIndices.push(idx);
+                });
+                if(currentLineIndices.length > 0) wordLineMappings.push(currentLineIndices);
+            }
         }
 
         function triggerActualGameLaunch() {
@@ -1107,7 +1185,6 @@
             }
         }
 
-        // INPUT EVENT CAPTURING WITH SCREEN SHAKE & FOCUS SCROLL
         const boxInputNode = document.getElementById('input-box');
         boxInputNode.addEventListener('input', () => {
             if(!gameActive || playerData.isFinished) return;
@@ -1126,8 +1203,6 @@
                     if(currentWordIndex >= totalWordsInBatch) {
                         playerData.isFinished = true; playerData.progressPercent = 100;
                         boxInputNode.disabled = true; boxInputNode.value = "FINISH!";
-                        
-                        // PEMAIN INI SELESAI -> BUKA LIVE CHAT UNTUK DIA SENDIRI
                         unlockAndOpenChatUI();
 
                         if(isOnlineMode) socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
@@ -1175,7 +1250,7 @@
             gameActive = false; clearInterval(loopInterval); clearInterval(matchDurationTimeout);
             document.getElementById('input-box').disabled = true;
             document.getElementById('live-timer-banner').style.display = 'none';
-            unlockAndOpenChatUI(); // Buka total chat saat sirkuit berakhir
+            unlockAndOpenChatUI();
 
             if(!isOnlineMode) {
                 if(!playerData.isFinished) { playerData.isFinished = true; registerLocalRacerFinished(playerData.name, playerData.currentWpm, playerData.carEmoji, false); }
@@ -1206,11 +1281,14 @@
         }
 
         function renderLeaderboardTableDOM() {
-            const tbody = document.getElementById('leaderboard-rows-target'); tbody.innerHTML = "";
-            finishedRacersData.forEach((r, idx) => {
-                const tr = document.createElement('tr'); tr.innerHTML = `<td><strong>#${idx+1}</strong></td><td>${r.emoji} ${r.name}</td><td>${r.wpm} WPM</td>`;
-                tbody.appendChild(tr);
-            });
+            const tbody = document.getElementById('results-modal').querySelector('#leaderboard-rows-target');
+            if(tbody) {
+                tbody.innerHTML = "";
+                finishedRacersData.forEach((r, idx) => {
+                    const tr = document.createElement('tr'); tr.innerHTML = `<td><strong>#${idx+1}</strong></td><td>${r.emoji} ${r.name}</td><td>${r.wpm} WPM</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
         }
 
         function sendChatMessageAction() {
@@ -1223,6 +1301,8 @@
                 const rowNode = document.createElement('div'); rowNode.className = "chat-row row-self";
                 rowNode.innerHTML = `<div class="chat-msg-item"><strong>${playerData.name}</strong>${val}</div>`;
                 chatContainer.appendChild(rowNode); chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Fixed Solo Mode target ID matching format track lane
                 triggerTrackBubbleAnim("bubble-player", val);
             }
             inp.value = "";
@@ -1259,15 +1339,20 @@
         function copyRoomShareLink() {
             const dummy = document.createElement('input'); dummy.value = window.location.origin + "?room=" + currentOnlineRoomId;
             document.body.appendChild(dummy); dummy.select(); document.execCommand('copy'); document.body.removeChild(dummy);
-            alert("Link Kamar Berhasil disalin!");
+            alert("Link Kamar Mabar berhasil disalin!");
         }
         function leaveRoomAction() { window.location.reload(); }
         function openScoresModal() { document.getElementById('results-modal').classList.add('active'); }
         function closeModalOnly() { document.getElementById('results-modal').classList.remove('active'); }
 
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search); const rParam = urlParams.get('room');
-            if(rParam) document.getElementById('roomcode-input').value = rParam.toUpperCase();
+            const urlParams = new URLSearchParams(window.location.search); 
+            const rParam = urlParams.get('room');
+            if(rParam) {
+                urlRoomCode = rParam.toUpperCase();
+                document.getElementById('lobby-panel').style.display = 'none';
+                document.getElementById('sharelink-join-modal').classList.add('active');
+            }
         }
     </script>
 </body>
