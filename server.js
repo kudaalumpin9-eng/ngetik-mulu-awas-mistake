@@ -30,7 +30,7 @@ io.on('connection', (socket) => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
-                room.players[pId].isReady = false; 
+                if (!room.players[pId].isSpectator) room.players[pId].isReady = false; 
             });
             io.to(roomId).emit('performReset'); 
             io.to(roomId).emit('roomData', room); 
@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
-                room.players[pId].isReady = false; 
+                if (!room.players[pId].isSpectator) room.players[pId].isReady = false; 
             });
             io.to(roomId).emit('forceResetMatch');
             io.to(roomId).emit('performReset');
@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
             hostId: socket.id,
             isTableOpen: true, 
             settings: { gameMode: 'words', wordTarget: 25, timeSelect: '60', lineView: '2', difficulty: 'easy', punctuation: true },
-            players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: true } }, 
+            players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: true, isSpectator: false } }, 
             results: []
         };
         socket.join(roomId);
@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
         const room = raceRooms[roomId];
         if (!room) return socket.emit('errorMsg', "❌ Kode Room tidak ditemukan, Bos!");
         
-        room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: false }; 
+        room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: false, isSpectator: false }; 
         socket.join(roomId);
         socket.emit('joinSuccess', { roomId, isHost: false });
         socket.emit('settingsUpdated', room.settings);
@@ -87,6 +87,15 @@ io.on('connection', (socket) => {
         const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
             room.players[socket.id].isReady = isReady;
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    socket.on('toggleSpectate', ({ roomId, isSpectator }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isSpectator = isSpectator;
+            if (isSpectator) room.players[socket.id].isReady = false; 
             io.to(roomId).emit('roomData', room);
         }
     });
@@ -130,15 +139,13 @@ io.on('connection', (socket) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
             
-            // Logika Validasi Validasi Ready Player sebelum Balapan dimulai
             const unreadyPlayers = [];
             Object.keys(room.players).forEach(pId => {
-                if (pId !== room.hostId && !room.players[pId].isReady) {
+                if (pId !== room.hostId && !room.players[pId].isReady && !room.players[pId].isSpectator) {
                     unreadyPlayers.push(room.players[pId].name);
                 }
             });
 
-            // Jika ada yang belum ready, batalkan start dan kirim notifikasi ke room
             if (unreadyPlayers.length > 0) {
                 return io.to(roomId).emit('gagalMulai', { unreadyNames: unreadyPlayers });
             }
