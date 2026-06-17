@@ -90,8 +90,10 @@
             min-height: 250px;
             max-width: 600px;
             max-height: 700px;
+            transition: height 0.2s ease, width 0.2s ease;
         }
         
+        /* Ketika kelas minimize aktif, kunci tinggi tepat di 42px sebaris header */
         .chat-top-container.chat-minimized {
             height: 42px !important;
             width: 280px !important;
@@ -252,7 +254,7 @@
         .kick-btn { background: none; border: none; color: var(--wrong-color); font-weight: bold; cursor: pointer; padding: 0 5px; font-size: 0.9rem; margin-left: 5px; transition: transform 0.1s; }
         .kick-btn:hover { transform: scale(1.2); }
         
-        /* Badge Status Ready di Lintasan */
+        /* Badge Status Ready */
         .ready-badge { padding: 2px 6px; font-size: 0.75rem; font-weight: bold; border-radius: 4px; margin-left: 8px; text-transform: uppercase; }
         .badge-is-ready { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid #4ade80; }
         .badge-not-ready { background-color: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
@@ -286,7 +288,7 @@
         .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
         .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
 
-        /* --- DISPLAY KATA FULL KONTENER --- */
+        /* --- DISPLAY KATA --- */
         .text-display { 
             background-color: var(--bg-color); 
             border-radius: 8px; 
@@ -334,7 +336,6 @@
         .role-badge { padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
         .role-join { background-color: rgba(74, 222, 128, 0.2); color: var(--correct-color); }
 
-        /* MODAL GENERAL STYLING */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 8000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .tournament-results { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 650px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
@@ -365,7 +366,7 @@
         }
         .shake-active { animation: screenShake 0.15s cubic-bezier(.36,.07,.19,.97) both; }
         
-        .unready-txt-alert { color: #f87171 !important; font-weight: bold; text-shadow: 0 0 10px rgba(248,113,113,0.3); }
+        .unready-txt-alert { color: #f87171 !important; font-weight: bold; text-shadow: 0 0 10px rgba(248,113,113,0.3); line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -392,7 +393,6 @@
         <div class="tournament-results" style="max-width: 500px;">
             <h3 style="color: var(--accent-color); margin-top: 0;">🏎️ Bergabung ke Kamar Balap 🏎️</h3>
             <p>Seseorang mengundang lo balapan! Isi nama dan siapkan kendaraan lo:</p>
-            
             <input type="text" id="sharelink-nickname-input" class="lobby-input" placeholder="Masukkan Nama Balap..." value="dimas" maxlength="12" style="width: 90%; border: 2px solid var(--accent-color);">
             
             <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">Pilih Mesin Kendaraan:</p>
@@ -606,7 +606,6 @@
         <div class="tournament-results" style="max-width: 550px;">
             <h2 style="color: var(--accent-color); margin-top:0;">🏎️ GARASI KENDARAAN UTAMA 🏎️</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem;">Pilih mesin balap andalan lo untuk turun ke sirkuit siber</p>
-            
             <div class="garage-grid">
                 <div class="garage-item selected-car" id="car-item-1" onclick="selectCarFromGarage('🚗', 'car-item-1')">
                     <span class="car-img">🚗</span><span class="car-label">Sedan Merah</span>
@@ -807,7 +806,6 @@
                 document.getElementById('room-code-txt').innerText = roomId;
                 document.getElementById('chat-sidebar-panel').style.display = 'block';
                 
-                // Jika Guest, munculkan tombol Ready
                 const rdyBtn = document.getElementById('ready-toggle-btn');
                 if(!isServerHost) {
                     rdyBtn.style.display = 'inline-block';
@@ -840,7 +838,7 @@
 
             socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
                 clearMatchStateData();
-                document.getElementById('ready-toggle-btn').style.display = 'none'; // Sembunyikan tombol saat balapan berjalan
+                document.getElementById('ready-toggle-btn').style.display = 'none'; 
                 wordsList = incomingWords;
                 totalWordsInBatch = wordsList.length;
                 renderWords();
@@ -848,11 +846,11 @@
                 executeVisualCountdownSequence();
             });
 
-            // Gagal Mulai karena ada yang belum ready (Notifikasi Otomatis di Kotak Soal)
+            // Gagal Mulai otomatis ganti tulisan "Menunggu Host..." dengan Notifikasi Player Belum Ready
             socket.on('gagalMulai', ({ unreadyNames }) => {
                 const namesStr = unreadyNames.join(', ');
                 const wrapper = document.getElementById('words-wrapper');
-                wrapper.innerHTML = `<span class="unready-txt-alert">❌ Gagal Mulai! Player berikut belum Ready: <br>[ ${namesStr} ]</span>`;
+                wrapper.innerHTML = `<span class="unready-txt-alert">❌ Pertandingan Tidak Dapat Dimulai!<br>Player Berikut Belum Ready: [ ${namesStr} ]</span>`;
                 triggerScreenShakeEffect();
             });
 
@@ -921,7 +919,6 @@
             });
         }
 
-        // TRIGGER TOMBOL READY/UNREADY
         function toggleReadyStatusAction() {
             if(!isOnlineMode || isServerHost) return;
             playerData.isReady = !playerData.isReady;
@@ -936,7 +933,7 @@
             socket.emit('toggleReady', { roomId: currentOnlineRoomId, isReady: playerData.isReady });
         }
 
-        // DRAG CHAT WINDOW
+        // DRAG PANEL CHAT
         const chatWindow = document.getElementById("chat-sidebar-panel");
         const chatHeader = document.getElementById("chat-draggable-header");
         let isDraggingChat = false; let chatOffsetX, chatOffsetY;
@@ -999,32 +996,36 @@
             else { panel.classList.add('collapsed'); btn.innerText = "Buka Pengaturan ▼"; }
         }
 
+        // FITUR MINIMIZE CHAT SEBARIS (42px) TOTAL SEMBUNYI BODI & INPUT
         function toggleChatPanelAction() {
-            if(playerData.gameActiveRun && !playerData.isFinished) return;
+            if(gameActive && !playerData.isFinished) return;
+            const chatPanel = document.getElementById('chat-sidebar-panel');
             const wrapper = document.getElementById('chat-collapsible-wrapper');
             const btn = document.getElementById('chat-toggle-btn');
             
-            if(chatWindow.classList.contains('chat-minimized')) {
-                chatWindow.classList.remove('chat-minimized');
+            if(chatPanel.classList.contains('chat-minimized')) {
+                chatPanel.classList.remove('chat-minimized');
                 wrapper.style.display = 'flex';
-                btn.innerText = "Minimalize";
+                btn.innerText = "Minimize";
             } else {
-                chatWindow.classList.add('chat-minimized');
+                chatPanel.classList.add('chat-minimized');
                 wrapper.style.display = 'none';
                 btn.innerText = "Maximize";
             }
         }
 
         function forceLockAndCloseChatUI() {
-            chatWindow.classList.add('chat-minimized');
+            const chatPanel = document.getElementById('chat-sidebar-panel');
+            chatPanel.classList.add('chat-minimized');
             document.getElementById('chat-collapsible-wrapper').style.display = 'none';
             document.getElementById('chat-toggle-btn').innerText = "Maximize";
         }
 
         function unlockAndOpenChatUI() {
-            chatWindow.classList.remove('chat-minimized');
+            const chatPanel = document.getElementById('chat-sidebar-panel');
+            chatPanel.classList.remove('chat-minimized');
             document.getElementById('chat-collapsible-wrapper').style.display = 'flex';
-            document.getElementById('chat-toggle-btn').innerText = "Minimalize";
+            document.getElementById('chat-toggle-btn').innerText = "Minimize";
         }
 
         function insertEmojiToInput(emoji) {
@@ -1080,7 +1081,6 @@
             const bubbleDomId = `bubble-${id}`;
             const dotClass = status === 'offline' ? 'offline' : 'online';
             
-            // Logika teks label ready/host
             let readyLabel = "";
             if (isOnlineMode) {
                 if (isHost) {
@@ -1409,7 +1409,6 @@
                 const rowNode = document.createElement('div'); rowNode.className = "chat-row row-self";
                 rowNode.innerHTML = `<div class="chat-msg-item"><strong>${playerData.name}</strong>${val}</div>`;
                 chatContainer.appendChild(rowNode); chatContainer.scrollTop = chatContainer.scrollHeight;
-                
                 triggerTrackBubbleAnim("bubble-player", val);
             }
             inp.value = "";
