@@ -93,7 +93,6 @@
             transition: height 0.2s ease, width 0.2s ease;
         }
         
-        /* FIX: Memotong sisa elemen bodi & input agar menciut sempurna menjadi 1 baris */
         .chat-top-container.chat-minimized {
             height: 42px !important;
             min-height: 42px !important;
@@ -998,7 +997,6 @@
             else { panel.classList.add('collapsed'); btn.innerText = "Buka Pengaturan ▼"; }
         }
 
-        // FIX: Fungsi toggle minimize memaksa bodi disembunyikan penuh & overflow dipotong
         function toggleChatPanelAction() {
             if(gameActive && !playerData.isFinished) return;
             const chatPanel = document.getElementById('chat-sidebar-panel');
@@ -1159,6 +1157,7 @@
             }, 1000);
         }
 
+        /* --- PERBAIKAN UTAMA: SISTEM WINDOWING SCROLL BARIS KATA DINAMIS --- */
         function renderWords() {
             const wrapper = document.getElementById('words-wrapper'); 
             wrapper.innerHTML = "";
@@ -1166,57 +1165,98 @@
             currentActiveLineIndex = 0;
             
             const lineView = document.getElementById('line-view-select').value;
-            let currentLineDiv = document.createElement('div');
-            currentLineDiv.className = "word-line"; 
-            wrapper.appendChild(currentLineDiv);
             let currentLineIndices = [];
+            const maxWordsPerLine = lineView === '1' ? 6 : (lineView === '2' ? 9 : 11);
 
             if (lineView === 'all') {
+                let currentLineDiv = document.createElement('div');
+                currentLineDiv.className = "word-line";
+                wrapper.appendChild(currentLineDiv);
+                
                 wordsList.forEach((word, idx) => {
                     const span = document.createElement('span');
                     span.className = idx === 0 ? "word current" : "word";
-                    span.id = `word-${idx}`; span.innerText = word;
+                    span.id = `word-${idx}`; 
+                    span.innerText = word;
                     currentLineDiv.appendChild(span);
                     currentLineIndices.push(idx);
                 });
                 wordLineMappings.push(currentLineIndices);
-            } else {
-                const maxWordsPerLine = lineView === '1' ? 6 : (lineView === '2' ? 9 : 11);
-                
-                wordsList.forEach((word, idx) => {
-                    if (currentLineIndices.length >= maxWordsPerLine) {
-                        wordLineMappings.push(currentLineIndices);
-                        currentLineIndices = [];
-                        currentLineDiv = document.createElement('div');
-                        currentLineDiv.className = "word-line";
-                        wrapper.appendChild(currentLineDiv);
-                    }
-                    
-                    const span = document.createElement('span');
-                    span.className = idx === 0 ? "word current" : "word";
-                    span.id = `word-${idx}`; span.innerText = word;
-                    currentLineDiv.appendChild(span);
-                    currentLineIndices.push(idx);
-                });
-                if(currentLineIndices.length > 0) wordLineMappings.push(currentLineIndices);
+                return;
             }
-            applyLineViewLimit();
+
+            // Memetakan kata ke kelompok baris virtual secara teratur
+            wordsList.forEach((word, idx) => {
+                currentLineIndices.push(idx);
+                if (currentLineIndices.length >= maxWordsPerLine || idx === wordsList.length - 1) {
+                    wordLineMappings.push(currentLineIndices);
+                    currentLineIndices = [];
+                }
+            });
+
+            // Hanya me-render jumlah baris yang dipilih user ke dalam DOM (Sirkulasi Windowing)
+            const allowedLines = parseInt(lineView);
+            for (let i = 0; i < allowedLines; i++) {
+                if (!wordLineMappings[i]) break; 
+                
+                const lineDiv = document.createElement('div');
+                lineDiv.className = "word-line";
+                lineDiv.setAttribute('data-line-idx', i);
+                
+                wordLineMappings[i].forEach(idx => {
+                    const span = document.createElement('span');
+                    span.className = idx === currentWordIndex ? "word current" : "word";
+                    span.id = `word-${idx}`; 
+                    span.innerText = wordsList[idx];
+                    lineDiv.appendChild(span);
+                });
+                wrapper.appendChild(lineDiv);
+            }
         }
 
-        function applyLineViewLimit() {
+        /* --- PERBAIKAN UTAMA: COCOK & SEGERA HAPUS BARIS LAMA, GENERATE BARIS BARU --- */
+        function handleAutoLineScrollingLogic() {
             const lineView = document.getElementById('line-view-select').value;
             if (lineView === 'all') return;
             
-            const lines = document.getElementsByClassName('word-line');
-            const allowedLines = parseInt(lineView);
+            const wrapper = document.getElementById('words-wrapper');
+            const linesInDom = wrapper.getElementsByClassName('word-line');
+            if (linesInDom.length === 0) return;
+
+            // Membaca baris teratas yang ada di DOM saat ini
+            const firstLineDom = linesInDom[0];
+            const firstLineIdx = parseInt(firstLineDom.getAttribute('data-line-idx'));
             
-            for (let i = 0; i < lines.length; i++) {
-                if (i >= allowedLines) {
-                    lines[i].style.display = 'none';
-                } else {
-                    lines[i].style.display = 'block';
+            const targetLineIndices = wordLineMappings[firstLineIdx];
+            const lastWordIdxInFirstLine = targetLineIndices[targetLineIndices.length - 1];
+
+            // Jika indeks ketikan saat ini melompat melewati kata terakhir baris atas, baris atas dihancurkan dari DOM
+            if (currentWordIndex > lastWordIdxInFirstLine) {
+                firstLineDom.remove();
+                
+                // Cari data baris antrean selanjutnya yang belum dipasang untuk menyeimbangkan tinggi kontainer
+                const allowedLines = parseInt(lineView);
+                const nextLineToRenderIdx = firstLineIdx + allowedLines;
+
+                if (wordLineMappings[nextLineToRenderIdx]) {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = "word-line";
+                    lineDiv.setAttribute('data-line-idx', nextLineToRenderIdx);
+                    
+                    wordLineMappings[nextLineToRenderIdx].forEach(idx => {
+                        const span = document.createElement('span');
+                        span.className = idx === currentWordIndex ? "word current" : "word";
+                        span.id = `word-${idx}`; 
+                        span.innerText = wordsList[idx];
+                        lineDiv.appendChild(span);
+                    });
+                    wrapper.appendChild(lineDiv);
                 }
             }
+        }
+
+        function applyLineViewLimit() {
+            // Dikosongkan karena rotasi baris telah dikontrol ketat oleh manipulasi DOM langsung di fungsi atas.
         }
 
         function triggerActualGameLaunch() {
@@ -1318,40 +1358,6 @@
             const arena = document.getElementById('race-track-card');
             arena.classList.add('shake-active');
             setTimeout(() => arena.classList.remove('shake-active'), 150);
-        }
-
-        function handleAutoLineScrollingLogic() {
-            const lineView = document.getElementById('line-view-select').value;
-            if(lineView === 'all') return;
-            
-            let targetLineIdx = -1;
-            for(let l=0; l<wordLineMappings.length; l++) { 
-                if(wordLineMappings[l].includes(currentWordIndex)) { 
-                    targetLineIdx = l; 
-                    break; 
-                } 
-            }
-            
-            if(targetLineIdx > currentActiveLineIndex) {
-                currentActiveLineIndex = targetLineIdx;
-                const lines = document.getElementsByClassName('word-line');
-                const allowedLines = parseInt(lineView);
-
-                if(lines[0]) {
-                    lines[0].remove();
-                    currentActiveLineIndex--;
-                    wordLineMappings.shift();
-                }
-
-                const updatedLines = document.getElementsByClassName('word-line');
-                for (let i = 0; i < updatedLines.length; i++) {
-                    if (i < allowedLines) {
-                        updatedLines[i].style.display = 'block';
-                    } else {
-                        updatedLines[i].style.display = 'none';
-                    }
-                }
-            }
         }
 
         function checkLocalMatchCompletionCondition() { if(playerData.isFinished && activeBots.every(b => b.isFinished)) terminateMatchEndSequence(); }
