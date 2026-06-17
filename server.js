@@ -30,6 +30,7 @@ io.on('connection', (socket) => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
+                room.players[pId].isReady = false; // Reset status ready untuk match selanjutnya
             });
             io.to(roomId).emit('performReset'); 
             io.to(roomId).emit('roomData', room); 
@@ -45,6 +46,7 @@ io.on('connection', (socket) => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
+                room.players[pId].isReady = false; // Reset status ready
             });
             io.to(roomId).emit('forceResetMatch');
             io.to(roomId).emit('performReset');
@@ -61,7 +63,7 @@ io.on('connection', (socket) => {
             hostId: socket.id,
             isTableOpen: true, 
             settings: { gameMode: 'words', wordTarget: 25, timeSelect: '60', lineView: '2', difficulty: 'easy', punctuation: true },
-            players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false } },
+            players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: true } }, // Host otomatis ready
             results: []
         };
         socket.join(roomId);
@@ -73,12 +75,21 @@ io.on('connection', (socket) => {
         const room = raceRooms[roomId];
         if (!room) return socket.emit('errorMsg', "❌ Kode Room tidak ditemukan, Bos!");
         
-        room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", currentWpm: 0, progressPercent: 0, isFinished: false };
+        room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: false }; // Guest bawaan belum ready
         socket.join(roomId);
         socket.emit('joinSuccess', { roomId, isHost: false });
         socket.emit('settingsUpdated', room.settings);
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
+    });
+
+    // Menangani perubahan status ready dari player
+    socket.on('toggleReady', ({ roomId, isReady }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isReady = isReady;
+            io.to(roomId).emit('roomData', room);
+        }
     });
 
     socket.on('kickPlayerAction', ({ roomId, targetId }) => {
@@ -100,7 +111,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // FIX 1: Mengubah 'updateSettings' menjadi 'updateSettingsServer' agar sinkron dengan index.html
     socket.on('updateSettingsServer', ({ roomId, ...settings }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
@@ -117,10 +127,24 @@ io.on('connection', (socket) => {
         }
     });
 
-    // FIX 2: Mengubah 'triggerStart' menjadi 'triggerCountdownServer' agar sinkron dengan index.html
     socket.on('triggerCountdownServer', ({ roomId, wordsList }) => {
         const room = raceRooms[roomId];
         if (room && room.hostId === socket.id) {
+            
+            // Logika Validasi Pengecekan Player Ready
+            const unreadyPlayers = [];
+            Object.keys(room.players).forEach(pId => {
+                // Kecualikan Host dari pengecekan jika diperlukan, atau cek semua player
+                if (pId !== room.hostId && !room.players[pId].isReady) {
+                    unreadyPlayers.push(room.players[pId].name);
+                }
+            });
+
+            // Jika ada player yang belum ready, batalkan start dan kirim notifikasi nama player
+            if (unreadyPlayers.length > 0) {
+                return socket.emit('gagalMulai', { unreadyNames: unreadyPlayers });
+            }
+
             room.results = [];
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
