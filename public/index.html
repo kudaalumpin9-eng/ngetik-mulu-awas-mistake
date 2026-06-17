@@ -93,16 +93,18 @@
             transition: height 0.2s ease, width 0.2s ease;
         }
         
-        /* Ketika kelas minimize aktif, kunci tinggi tepat di 42px sebaris header */
+        /* FIX: Memotong sisa elemen bodi & input agar menciut sempurna menjadi 1 baris */
         .chat-top-container.chat-minimized {
             height: 42px !important;
+            min-height: 42px !important;
             width: 280px !important;
             resize: none !important;
+            overflow: hidden !important; 
         }
 
         .chat-header {
             background-color: #1e293b;
-            padding: 10px 15px;
+            padding: 0 15px;
             font-weight: bold;
             color: var(--accent-color);
             border-bottom: 1px solid rgba(100,116,139,0.2);
@@ -112,6 +114,7 @@
             cursor: move;
             user-select: none;
             height: 42px;
+            min-height: 42px;
             box-sizing: border-box;
         }
         .chat-collapsible-body {
@@ -846,7 +849,6 @@
                 executeVisualCountdownSequence();
             });
 
-            // Gagal Mulai otomatis ganti tulisan "Menunggu Host..." dengan Notifikasi Player Belum Ready
             socket.on('gagalMulai', ({ unreadyNames }) => {
                 const namesStr = unreadyNames.join(', ');
                 const wrapper = document.getElementById('words-wrapper');
@@ -996,7 +998,7 @@
             else { panel.classList.add('collapsed'); btn.innerText = "Buka Pengaturan ▼"; }
         }
 
-        // FITUR MINIMIZE CHAT SEBARIS (42px) TOTAL SEMBUNYI BODI & INPUT
+        // FIX: Fungsi toggle minimize memaksa bodi disembunyikan penuh & overflow dipotong
         function toggleChatPanelAction() {
             if(gameActive && !playerData.isFinished) return;
             const chatPanel = document.getElementById('chat-sidebar-panel');
