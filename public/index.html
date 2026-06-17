@@ -6,21 +6,13 @@
     <title>Cyber Typing Race - Grand Championship V10</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        .status-dot {
-            height: 10px;
-            width: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            vertical-align: middle;
-        }
-        .online { background-color: #4ade80; box-shadow: 0 0 8px #4ade80; } 
-        .offline { background-color: #f87171; box-shadow: 0 0 8px #f87171; } 
-        
         :root {
-            --bg-color: #0f172a;
+            --bg-color: #0b0f19;
             --card-bg: #1e293b;
             --accent-color: #38bdf8;
+            --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --neon-green: #39ff14;
+            --neon-purple: #f43f5e;
             --text-main: #f8fafc;
             --text-muted: #64748b;
             --correct-color: #4ade80;
@@ -42,41 +34,269 @@
 
         h1 {
             font-size: 2.5rem;
-            color: var(--accent-color);
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
             margin-bottom: 10px;
+            font-weight: 800;
+            letter-spacing: 2px;
         }
 
         .lobby-panel {
             background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 35px;
             width: 100%;
             max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.15);
             text-align: center;
             margin-top: 40px;
         }
 
         .lobby-input {
             width: 85%;
-            padding: 12px;
-            margin: 10px 0;
-            background-color: var(--bg-color);
+            padding: 14px;
+            margin: 12px 0;
+            background-color: #0f172a;
             color: var(--text-main);
-            border: 1px solid var(--text-muted);
-            border-radius: 6px;
+            border: 2px solid #334155;
+            border-radius: 8px;
             font-size: 1rem;
             text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
         }
 
-        /* --- CHAT BOX FLOATING DESIGN --- */
+        .lobby-input:focus {
+            border-color: #00f2fe;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+
+        /* --- GARAGE GRID & ITEMS --- */
+        .garage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .garage-item {
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 10px;
+            padding: 12px 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .garage-item:hover {
+            border-color: #00f2fe;
+            transform: translateY(-2px);
+            box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+        }
+
+        .garage-item.selected-car {
+            border-color: var(--correct-color);
+            background: rgba(74, 222, 128, 0.1);
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .garage-item .car-img {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            display: block;
+            line-height: 1;
+        }
+
+        .garage-item .car-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* --- ARENA DESIGN --- */
+        .status-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .track-container {
+            background-color: var(--card-bg);
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 25px;
+            width: 100%;
+            max-width: 850px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .track-lanes-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .track-lane {
+            height: 90px;
+            border-bottom: 2px dashed #334155;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 6px;
+        }
+
+        .lane-info {
+            position: absolute;
+            left: 12px;
+            top: 6px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            z-index: 2;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .lane-info .wpm-counter {
+            color: #00f2fe;
+            font-weight: bold;
+        }
+
+        .car-node-wrapper {
+            position: absolute;
+            left: 0;
+            bottom: 8px;
+            transition: left 0.15s linear;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            z-index: 5;
+        }
+
+        .car {
+            font-size: 40px;
+            transform: scaleX(-1);
+            width: 100%;
+            text-align: center;
+            line-height: 1;
+        }
+
+        /* --- TYPING INTERFACE --- */
+        .text-display {
+            background-color: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 22px;
+            font-size: 1.4rem;
+            line-height: 1.9;
+            margin-bottom: 15px;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .word {
+            display: inline-block;
+            padding: 2px 4px;
+            margin: 2px 4px;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .word.current {
+            color: var(--text-main);
+            background-color: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+        }
+
+        .word.current.error {
+            background-color: rgba(248, 113, 113, 0.3);
+            box-shadow: 0 0 8px var(--wrong-color);
+        }
+
+        .word.completed {
+            color: var(--correct-color);
+        }
+
+        #input-box {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1.3rem;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 2px solid #334155;
+            border-radius: 10px;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        #input-box:focus {
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+        }
+
+        /* --- BUTTONS & BADGES --- */
+        .btn {
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--accent-gradient); color: #0b0f19; }
+        .btn-success { background: linear-gradient(135deg, #22c55e, #4ade80); color: #0b0f19; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
+        .btn-secondary { background: #475569; color: #fff; }
+
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+        }
+
+        .room-badge { background-color: #3b82f6; color: white; padding: 4px 10px; border-radius: 6px; font-family: monospace; }
+        .ready-badge { padding: 3px 8px; font-size: 0.75rem; font-weight: bold; border-radius: 4px; margin-left: 8px; text-transform: uppercase; }
+        .badge-is-ready { background-color: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid #4ade80; }
+        .badge-not-ready { background-color: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid #f87171; }
+
+        /* --- CHAT CONTAINER --- */
         .chat-top-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
             width: 340px;
-            height: 420px;
+            height: 400px;
             background-color: var(--card-bg);
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -84,320 +304,68 @@
             display: flex;
             flex-direction: column;
             z-index: 2000;
-            border: 2px solid var(--accent-color);
-            resize: both;
-            min-width: 280px;
-            min-height: 250px;
-            max-width: 600px;
-            max-height: 700px;
-            transition: height 0.2s ease, width 0.2s ease;
+            border: 2px solid #00f2fe;
         }
         
-        .chat-top-container.chat-minimized {
-            height: 42px !important;
-            min-height: 42px !important;
-            width: 280px !important;
-            resize: none !important;
-            overflow: hidden !important; 
-        }
+        .chat-top-container.chat-minimized { height: 42px !important; }
+        .chat-header { background-color: #1e293b; padding: 0 15px; font-weight: bold; color: #00f2fe; display: flex; justify-content: space-between; align-items: center; cursor: pointer; height: 42px; border-bottom: 1px solid #334155; }
+        .chat-messages { padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; flex-grow: 1; background: rgba(15,23,42,0.8); }
+        .chat-input-wrapper { display: flex; border-top: 1px solid #334155; background: #111827; padding: 8px 12px; gap: 6px; }
+        #chat-input-box { flex: 1; background: #0f172a; border: 1px solid #334155; color: var(--text-main); border-radius: 6px; padding: 8px; outline: none; }
 
-        .chat-header {
-            background-color: #1e293b;
-            padding: 0 15px;
-            font-weight: bold;
-            color: var(--accent-color);
-            border-bottom: 1px solid rgba(100,116,139,0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-            user-select: none;
-            height: 42px;
-            min-height: 42px;
-            box-sizing: border-box;
-        }
-        .chat-collapsible-body {
-            display: flex;
-            flex-direction: column;
-            height: calc(100% - 42px);
-            width: 100%;
-        }
-        .chat-messages {
-            padding: 12px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 0.85rem;
-            flex-grow: 1;
-            background: rgba(15,23,42,0.6);
-        }
-        .chat-messages::-webkit-scrollbar { width: 6px; }
-        .chat-messages::-webkit-scrollbar-track { background: #0f172a; }
-        .chat-messages::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
-
-        .chat-row { display: flex; width: 100%; }
-        .chat-row.row-self { justify-content: flex-end; }
-        .chat-row.row-other { justify-content: flex-start; }
-
-        .chat-msg-item {
-            max-width: 75%;
-            padding: 8px 12px;
-            border-radius: 12px;
-            line-height: 1.4;
-            word-break: break-all;
-        }
-        .row-self .chat-msg-item {
-            background-color: var(--chat-self);
-            color: #fff;
-            border-bottom-right-radius: 2px;
-        }
-        .row-other .chat-msg-item {
-            background-color: #334155;
-            color: var(--text-main);
-            border-bottom-left-radius: 2px;
-            border-left: 3px solid var(--accent-color);
-        }
-        .chat-msg-item strong { display: block; font-size: 0.75rem; margin-bottom: 2px; color: #a5f3fc; }
-        .row-self .chat-msg-item strong { color: #fef08a; }
-
-        .chat-emoji-bar {
-            display: flex;
-            gap: 5px;
-            padding: 4px 12px;
-            background: #111827;
-            border-top: 1px solid rgba(100,116,139,0.1);
-        }
-        .emoji-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 2px;
-            transition: transform 0.1s;
-        }
-        .emoji-btn:hover { transform: scale(1.3); }
-
-        .chat-input-wrapper { display: flex; border-top: 1px solid rgba(100,116,139,0.2); background: #111827; padding: 8px 12px; gap: 6px; align-items: center; }
-        #chat-input-box { flex: 1; background: var(--bg-color); border: 1px solid var(--text-muted); color: var(--text-main); border-radius: 6px; padding: 8px; outline: none; font-size: 0.85rem; }
-        
-        /* --- ACCORDION PANELS --- */
-        .accordion-wrapper {
-            width: 100%;
-            max-width: 850px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .accordion-header {
-            padding: 15px 20px;
-            background-color: #1e293b;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(100, 116, 139, 0.2);
-        }
-        .accordion-title { font-weight: bold; font-size: 1.1rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
-        .accordion-content { max-height: 600px; transition: max-height 0.4s ease-out, padding 0.4s ease-out; padding: 20px; box-sizing: border-box; }
-        .accordion-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden; border: none !important; }
-
-        .settings-table { width: 100%; border-collapse: collapse; }
-        .settings-table td { padding: 8px; vertical-align: middle; }
-        .settings-table td:first-child { font-weight: 600; color: var(--text-main); width: 35%; }
-
-        select, input[type="number"] { padding: 8px 12px; background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 6px; outline: none; }
-        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; }
-
-        /* --- LAMPU COUNTDOWN --- */
-        .countdown-box { 
-            display: none; 
-            background: rgba(0, 0, 0, 0.95); 
-            border: 3px solid #334155; 
-            border-radius: 12px; 
-            padding: 15px 25px; 
-            align-items: center; 
-            gap: 20px; 
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-        }
-        .lights { display: flex; gap: 10px; }
-        .light { width: 30px; height: 30px; border-radius: 50%; background-color: #222; transition: background-color 0.2s, box-shadow 0.2s; }
-        .light-red-active { background-color: #ef4444 !important; box-shadow: 0 0 15px #ef4444; }
-        .light-yellow-active { background-color: #eab308 !important; box-shadow: 0 0 15px #eab308; }
-        .light-green-active { background-color: #22c55e !important; box-shadow: 0 0 15px #22c55e; }
-        .countdown-text { color: #fff; font-size: 1.2rem; font-weight: bold; }
-        .countdown-number { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
-
-        .live-timer-banner { display: none; background: linear-gradient(90deg, #1e293b, #0f172a); border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px 25px; color: #fff; font-size: 1.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 10px auto; width: fit-content; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+        /* --- OVERLAY MODALS --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 25, 0.9); display: flex; justify-content: center; align-items: center; z-index: 8000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .tournament-results { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 550px; border: 2px solid #334155; text-align: center; }
 
         /* --- PODIUM --- */
-        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 250px; background-color: rgba(30, 41, 59, 0.5); border: 2px solid rgba(100, 116, 139, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; transition: max-height 0.4s ease-in-out, padding 0.4s, opacity 0.3s; overflow: hidden; opacity: 1; }
-        .live-podium-container.podium-collapsed { height: 0 !important; max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; border: none !important; opacity: 0; pointer-events: none; }
-        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 150px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; position: relative; }
-        .podium-slot .car-parked { font-size: 45px; transform: scaleX(-1); min-height: 55px; margin-bottom: 5px; line-height: 1; }
-        
-        .podium-slot .meta-txt { font-size: 0.8rem; line-height: 1.3; color: #fff; background: rgba(15, 23, 42, 0.9); padding: 5px 8px; border-radius: 6px; margin-bottom: 8px; width: 90%; box-sizing: border-box; word-break: break-all; white-space: pre-line; border: 1px solid rgba(255,255,255,0.15); }
-        .podium-slot.first { height: 160px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
-        .podium-slot.second { height: 125px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
-        .podium-slot.third { height: 95px; background: linear-gradient(135deg, #b45309, #78350f); }
+        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 15px; height: 200px; background-color: rgba(30, 41, 59, 0.3); border: 2px solid #334155; border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; }
+        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 130px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; }
+        .podium-slot .car-parked { font-size: 35px; transform: scaleX(-1); }
+        .podium-slot.first { height: 140px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+        .podium-slot.second { height: 110px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
+        .podium-slot.third { height: 85px; background: linear-gradient(135deg, #b45309, #78350f); }
+        .podium-slot .meta-txt { font-size: 0.75rem; color: #fff; background: #0f172a; padding: 3px 6px; border-radius: 4px; margin-bottom: 4px; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* --- LINTASAN BALAP --- */
-        .track-container { background-color: var(--card-bg); border-radius: 12px; padding: 20px; width: 100%; max-width: 850px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box; transition: transform 0.1s ease; }
-        .track-lanes-wrapper { display: flex; flex-direction: column; gap: 5px; width: 100%; }
-        .track-lane { height: 110px; border-bottom: 2px dashed var(--text-muted); position: relative; display: flex; align-items: center; justify-content: space-between; padding-right: 15px; width: 100%; box-sizing: border-box; }
-        .lane-info { position: absolute; left: 10px; top: 5px; font-size: 0.85rem; color: var(--text-muted); z-index: 2; display: flex; gap: 15px; align-items: center; }
-        .lane-info .wpm-counter { color: var(--accent-color); font-weight: bold; }
-        .kick-btn { background: none; border: none; color: var(--wrong-color); font-weight: bold; cursor: pointer; padding: 0 5px; font-size: 0.9rem; margin-left: 5px; transition: transform 0.1s; }
-        .kick-btn:hover { transform: scale(1.2); }
-        
-        /* Badge Status Ready */
-        .ready-badge { padding: 2px 6px; font-size: 0.75rem; font-weight: bold; border-radius: 4px; margin-left: 8px; text-transform: uppercase; }
-        .badge-is-ready { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid #4ade80; }
-        .badge-not-ready { background-color: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
-
-        .car-node-wrapper { position: absolute; left: 0; bottom: 5px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 100px; z-index: 5; }
-        .car { font-size: 45px; transform: scaleX(-1); width: 100%; text-align: center; line-height: 1; }
-        
-        .car-bubble { 
-            position: absolute; 
-            bottom: 52px; 
-            background: #f8fafc; 
-            color: #0f172a; 
-            padding: 6px 12px; 
-            border-radius: 10px; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
-            border: 2px solid var(--accent-color); 
-            opacity: 0; 
-            transform: scale(0.7) translateY(10px); 
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            pointer-events: none; 
-            width: 120px; 
-            text-align: center;
-            word-wrap: break-word;
-            z-index: 999;
-        }
-        .car-bubble.active { opacity: 1; transform: scale(1) translateY(0); }
-        .car-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border-width: 6px 6px 0; border-style: solid; border-color: #f8fafc transparent; display: block; width: 0; }
-
-        .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
-        .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
-
-        /* --- DISPLAY KATA --- */
-        .text-display { 
-            background-color: var(--bg-color); 
-            border-radius: 8px; 
-            padding: 20px 15px; 
-            font-size: 1.4rem; 
-            line-height: 1.9; 
-            margin-bottom: 5px; 
-            text-align: left; 
-            overflow: hidden; 
-            position: relative; 
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .words-line-container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-            width: 100%;
-        }
-        .word-line { 
-            display: block; 
-            white-space: normal; 
-            word-wrap: break-word; 
-            min-height: 40px; 
-            width: 100%;
-            text-align: justify; 
-        }
-        .word { display: inline-block; padding: 2px 6px; margin: 2px 4px; border-radius: 4px; color: var(--text-muted); }
-        .word.current { color: var(--text-main); background-color: rgba(56, 189, 248, 0.25); box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
-        .word.current.error { background-color: rgba(248, 113, 113, 0.35); box-shadow: 0 0 8px var(--wrong-color); color: #fff; }
-        .word.completed { color: var(--correct-color); }
-
-        .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; }
-        .input-container { display: flex; gap: 12px; align-items: center; }
-        #input-box { flex: 1; padding: 15px 20px; font-size: 1.3rem; background-color: var(--card-bg); color: var(--text-main); border: 2px solid var(--text-muted); border-radius: 8px; outline: none; }
-        #input-box.input-error { border-color: var(--wrong-color); background-color: rgba(248, 113, 113, 0.05); }
-
-        .btn { padding: 12px 20px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.1s; }
-        .btn:active { transform: scale(0.95); }
-        .btn-primary { background-color: var(--accent-color); color: var(--bg-color); }
-        .btn-success { background-color: var(--correct-color); color: var(--bg-color); }
-        .btn-danger { background-color: var(--wrong-color); color: #fff; }
-        .btn-secondary { background-color: #475569; color: #fff; }
-
-        .role-badge { padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
-        .role-join { background-color: rgba(74, 222, 128, 0.2); color: var(--correct-color); }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 8000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .tournament-results { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 650px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-        .leaderboard-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: left; }
-        .leaderboard-table th, .leaderboard-table td { padding: 10px; border-bottom: 1px solid rgba(100,116,139,0.3); }
-
-        .garage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; margin-top: 20px; max-height: 320px; overflow-y: auto; padding: 10px; }
-        .garage-item { background: #0f172a; border: 2px solid #475569; border-radius: 10px; padding: 15px 5px; cursor: pointer; text-align: center; transition: all 0.2s ease; }
-        .garage-item:hover { border-color: var(--accent-color); transform: translateY(-3px); background: #1e293b; }
-        .garage-item.selected-car { border-color: var(--correct-color); background: rgba(74, 222, 128, 0.1); }
-        .garage-item .car-img { font-size: 2.2rem; margin-bottom: 5px; display: block; line-height: 1; }
-        .garage-item .car-label { font-size: 0.8rem; font-weight: bold; color: var(--text-main); }
-
-        .mute-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 0 5px; color: var(--accent-color); }
-
-        @keyframes screenShake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(0deg); }
-        }
-        .shake-active { animation: screenShake 0.15s cubic-bezier(.36,.07,.19,.97) both; }
-        
-        .unready-txt-alert { color: #f87171 !important; font-weight: bold; text-shadow: 0 0 10px rgba(248,113,113,0.3); line-height: 1.5; }
+        /* --- PREVIEW BARIS --- */
+        .accordion-wrapper { width: 100%; max-width: 850px; background-color: var(--card-bg); border: 2px solid #334155; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+        .accordion-header { padding: 12px 20px; background-color: #1e293b; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+        .accordion-content { padding: 20px; box-sizing: border-box; }
+        .accordion-content.collapsed { display: none; }
+        .settings-table { width: 100%; }
+        .settings-table td { padding: 6px; }
+        .settings-table td:first-child { font-weight: 600; width: 35%; }
+        select, input[type="number"] { padding: 8px 12px; background-color: #0f172a; color: var(--text-main); border: 2px solid #334155; border-radius: 6px; outline: none; }
+        .live-timer-banner { display: none; background: var(--accent-gradient); color: #0b0f19; border-radius: 8px; padding: 10px 25px; font-size: 1.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 10px auto; width: fit-content; box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); }
     </style>
 </head>
 <body>
 
-    <h1>🏎️ NGETIK MULU AWAS MISTAKE 🏎️</h1>
+    <h1>🏁 CYBER TYPING RACE 🏁</h1>
 
     <div class="lobby-panel" id="lobby-panel">
-        <h3 style="color: var(--accent-color); margin-top:0;">🏁 Masuk Sirkuit Balap 🏁</h3>
-        <input type="text" id="nickname-input" class="lobby-input" placeholder="Masukkan Nickname Lo..." value="dimas" maxlength="12">
+        <h3 style="color: #00f2fe; margin-top:0;">🏎️ Masuk Sirkuit Balap</h3>
+        <input type="text" id="nickname-input" class="lobby-input" placeholder="Masukkan Nickname Lo..." value="Racer_Gz" maxlength="12">
         
-        <div style="margin: 15px 0; border-top: 1px dashed var(--text-muted); padding-top: 15px;">
+        <div style="margin: 15px 0; border-top: 1px dashed #334155; padding-top: 15px;">
             <button class="btn btn-success" style="width: 90%;" onclick="startSinglePlayerMode()">Main Solo + Bot Lawan 🤖</button>
         </div>
 
-        <div style="border-top: 1px dashed var(--text-muted); padding-top: 15px;">
+        <div style="border-top: 1px dashed #334155; padding-top: 15px;">
             <button class="btn btn-primary" style="width: 90%; margin-bottom: 10px;" onclick="createNewOnlineRoom()">Buat Kamar Mabar Baru 🌐</button>
             <br>
-            <input type="text" id="roomcode-input" class="lobby-input" placeholder="Masukkan KODE ROOM Mabar..." style="width: 50%; text-transform: uppercase;">
+            <input type="text" id="roomcode-input" class="lobby-input" placeholder="KODE ROOM..." style="width: 50%; text-transform: uppercase;">
             <button class="btn btn-secondary" onclick="joinOnlineRoom()">Join Kamar</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="sharelink-join-modal">
         <div class="tournament-results" style="max-width: 500px;">
-            <h3 style="color: var(--accent-color); margin-top: 0;">🏎️ Bergabung ke Kamar Balap 🏎️</h3>
+            <h3 style="color: #00f2fe; margin-top: 0;">🏎️ Bergabung ke Kamar Balap</h3>
             <p>Seseorang mengundang lo balapan! Isi nama dan siapkan kendaraan lo:</p>
-            <input type="text" id="sharelink-nickname-input" class="lobby-input" placeholder="Masukkan Nama Balap..." value="dimas" maxlength="12" style="width: 90%; border: 2px solid var(--accent-color);">
+            <input type="text" id="sharelink-nickname-input" class="lobby-input" placeholder="Nama Balap..." value="Racer_Gz" maxlength="12" style="width: 90%; border: 2px solid #00f2fe;">
             
-            <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">Pilih Mesin Kendaraan:</p>
+            <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">Pilih Kendaraan Anda:</p>
             <div class="garage-grid" id="sharelink-garage-grid">
                 <div class="garage-item selected-car" id="share-car-1" onclick="selectCarFromSharePopup('🚗', 'share-car-1')">
                     <span class="car-img">🚗</span><span class="car-label">Sedan Merah</span>
@@ -406,17 +374,23 @@
                     <span class="car-img">🏎️</span><span class="car-label">Mobil F1</span>
                 </div>
                 <div class="garage-item" id="share-car-3" onclick="selectCarFromSharePopup('🚓', 'share-car-3')">
-                    <span class="car-img">🚓</span><span class="car-label">Mobil Polisi</span>
+                    <span class="car-img">🚓</span><span class="car-label">Polisi</span>
                 </div>
-                <div class="garage-item" id="share-car-4" onclick="selectCarFromSharePopup('🚀', 'share-car-4')">
+                <div class="garage-item" id="share-car-4" onclick="selectCarFromSharePopup('🛹', 'share-car-4')">
+                    <span class="car-img">🛹</span><span class="car-label">Skateboard</span>
+                </div>
+                <div class="garage-item" id="share-car-5" onclick="selectCarFromSharePopup('🛼', 'share-car-5')">
+                    <span class="car-img">🛼</span><span class="car-label">Sepatu Roda</span>
+                </div>
+                <div class="garage-item" id="share-car-6" onclick="selectCarFromSharePopup('🚀', 'share-car-6')">
                     <span class="car-img">🚀</span><span class="car-label">Roket</span>
                 </div>
-                <div class="garage-item" id="share-car-5" onclick="selectCarFromSharePopup('🛸', 'share-car-5')">
+                <div class="garage-item" id="share-car-7" onclick="selectCarFromSharePopup('🛸', 'share-car-7')">
                     <span class="car-img">🛸</span><span class="car-label">UFO</span>
                 </div>
             </div>
             <br>
-            <button class="btn btn-success" style="width: 100%; font-size: 1.1rem;" onclick="confirmJoinViaShareLink()">GAS MASUK SIRKUIT! 🏁</button>
+            <button class="btn btn-success" style="width: 100%; font-size: 1.1rem; margin-top: 10px;" onclick="confirmJoinViaShareLink()">GAS MASUK SIRKUIT! 🏁</button>
         </div>
     </div>
 
@@ -424,11 +398,8 @@
         
         <div class="accordion-wrapper">
             <div class="accordion-header">
-                <div class="accordion-title">
-                    <span>⚙️ Pengaturan Kamar Balap</span>
-                    <span id="accordion-status-badge" style="font-size:0.8rem; color:var(--text-muted);">(Terbuka)</span>
-                </div>
-                <button id="accordion-toggle-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="toggleAccordionAction()">Tutup Pengaturan ▲</button>
+                <div style="font-weight: bold; color: #00f2fe;">⚙️ Pengaturan Kamar Balap</div>
+                <button id="accordion-toggle-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="toggleAccordionAction()">Tutup ▲</button>
             </div>
             <div id="accordion-content-body" class="accordion-content">
                 <table class="settings-table">
@@ -436,8 +407,8 @@
                         <td>Mode Game</td>
                         <td>
                             <select id="game-mode" onchange="toggleModeSettings(); broadcastSettings();">
-                                <option value="time">Mode 1: Berdasarkan Waktu</option>
-                                <option value="words" selected>Mode 2: Berdasarkan Jumlah Kata</option>
+                                <option value="time">Mode Waktu</option>
+                                <option value="words" selected>Mode Jumlah Kata</option>
                             </select>
                         </td>
                     </tr>
@@ -448,111 +419,48 @@
                                 <option value="15">15 Detik</option>
                                 <option value="30">30 Detik</option>
                                 <option value="60" selected>1 Menit</option>
-                                <option value="120">2 Menit</option>
                             </select>
                         </td>
                     </tr>
                     <tr id="row-word-count">
                         <td>Target Jumlah Kata</td>
                         <td>
-                            <input type="number" id="word-target-input" value="25" min="25" max="200" style="width: 80px;" oninput="broadcastSettings()">
+                            <input type="number" id="word-target-input" value="25" min="10" max="100" style="width: 80px;" oninput="broadcastSettings()">
                         </td>
                     </tr>
                     <tr>
-                        <td>Opsi Tampilan Baris Kata</td>
+                        <td>Opsi Kendaraan Utama</td>
                         <td>
-                            <select id="line-view-select" onchange="broadcastSettings(); if(!gameActive && wordsList.length > 0) renderWords();">
-                                <option value="1">1 Baris</option>
-                                <option value="2" selected>2 Baris</option>
-                                <option value="3">3 Baris</option>
-                                <option value="all">Tampilkan Semua Baris</option>
+                            <select id="main-car-select" onchange="updateMainVehicle(this.value)">
+                                <option value="🚗">🚗 Sedan Merah</option>
+                                <option value="🏎️">🏎️ Mobil F1</option>
+                                <option value="🚓">🚓 Mobil Polisi</option>
+                                <option value="🛹">🛹 Skateboard</option>
+                                <option value="🛼">🛼 Sepatu Roda</option>
+                                <option value="🚀">🚀 Roket</option>
+                                <option value="🛸">🛸 UFO</option>
                             </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Tingkat Kesusahan Kata</td>
-                        <td>
-                            <select id="difficulty-select" onchange="broadcastSettings()">
-                                <option value="easy" selected>Mudah (Kata Pendek Standar)</option>
-                                <option value="hard">Sulit (Kata Panjang & Simbol)</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Kustomisasi Huruf</td>
-                        <td>
-                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="punctuation-toggle" checked onchange="broadcastSettings()"> Tanda Baca
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="capitalize-toggle" checked onchange="broadcastSettings()"> Huruf Kapital
-                                </label>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Kendaraan Kamu</td>
-                        <td>
-                            <button class="btn btn-primary" style="padding: 6px 15px; font-size:0.85rem;" onclick="openGarageModal()">Pilih dari Garasi Kendaraan 🏎️</button>
-                            <span id="current-car-preview" style="font-size:1.4rem; margin-left:12px; vertical-align:middle;">🚗</span>
-                        </td>
-                    </tr>
-                    <tr id="bot-management-row" style="display: none;">
-                        <td>Manajemen Bot Lawan</td>
-                        <td>
-                            <button id="add-bot-btn" class="btn btn-secondary" onclick="addBot()" style="padding: 5px 12px; font-size: 0.85rem;">+ Tambah Bot</button>
-                            <button id="remove-bot-btn" class="btn btn-danger" onclick="removeBot()" style="padding: 5px 12px; font-size: 0.85rem;">🗑️ Hapus Bot</button>
                         </td>
                     </tr>
                 </table>
             </div>
         </div>
 
-        <div style="margin-bottom: 10px; display: flex; justify-content: flex-start; width: 100%;">
-            <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="togglePodiumView()">👁️ Buka / Tutup Podium</button>
-        </div>
-
         <div class="live-podium-container" id="live-podium-widget">
             <div class="podium-slot second">
                 <div id="podium-2-meta" class="meta-txt">Menunggu...</div>
                 <div id="podium-2-car" class="car-parked">🏁</div>
-                <div style="color: #1e293b; margin-top: 5px; font-size: 0.9rem;">2nd Place</div>
+                <div style="color: #1e293b; font-size: 0.8rem; font-weight: bold;">2nd Place</div>
             </div>
             <div class="podium-slot first">
                 <div id="podium-1-meta" class="meta-txt">Menunggu...</div>
                 <div id="podium-1-car" class="car-parked">🏁</div>
-                <div style="color: #1e293b; margin-top: 5px; font-size: 0.9rem;">1st Place 👑</div>
+                <div style="color: #1e293b; font-size: 0.8rem; font-weight: bold;">1st Place 👑</div>
             </div>
             <div class="podium-slot third">
                 <div id="podium-3-meta" class="meta-txt">Menunggu...</div>
                 <div id="podium-3-car" class="car-parked">🏁</div>
-                <div style="color: #1e293b; margin-top: 5px; font-size: 0.9rem;">3rd Place</div>
-            </div>
-        </div>
-
-        <div class="chat-top-container chat-minimized" id="chat-sidebar-panel">
-            <div class="chat-header" id="chat-draggable-header">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span id="chat-header-title">💬 Live Chat Balapan</span>
-                    <button id="chat-mute-btn" class="mute-btn" onclick="toggleMuteSoundAction(event)">🔊</button>
-                </div>
-                <button id="chat-toggle-btn" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="toggleChatPanelAction()">Maximize</button>
-            </div>
-            <div id="chat-collapsible-wrapper" class="chat-collapsible-body" style="display: none;">
-                <div class="chat-messages" id="chat-messages-target"></div>
-                <div class="chat-emoji-bar">
-                    <button class="emoji-btn" onclick="insertEmojiToInput('🏎️')">🏎️</button>
-                    <button class="emoji-btn" onclick="insertEmojiToInput('🚗')">🚗</button>
-                    <button class="emoji-btn" onclick="insertEmojiToInput('🔥')">🔥</button>
-                    <button class="emoji-btn" onclick="insertEmojiToInput('👑')">👑</button>
-                    <button class="emoji-btn" onclick="insertEmojiToInput('😂')">😂</button>
-                    <button class="emoji-btn" onclick="insertEmojiToInput('GG')">💬</button>
-                </div>
-                <div class="chat-input-wrapper">
-                    <input type="text" id="chat-input-box" placeholder="Ketik disini..." onkeydown="if(event.key === 'Enter') sendChatMessageAction()">
-                    <button class="btn btn-primary" style="padding: 6px 12px; font-size:0.8rem;" onclick="sendChatMessageAction()">Kirim</button>
-                </div>
+                <div style="color: #1e293b; font-size: 0.8rem; font-weight: bold;">3rd Place</div>
             </div>
         </div>
 
@@ -560,914 +468,506 @@
 
         <div class="track-container" id="race-track-card">
             <div class="status-display">
-                <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
+                <div>Status: <span id="role-text" class="room-badge" style="background-color: #22c55e;">PLAYER</span></div>
                 <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
-                    <button class="btn btn-danger" style="padding: 6px 14px; font-size: 0.85rem; background-color: #ef4444;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label class="checkbox-label" style="background: #334155; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--accent-color);">
+                        <input type="checkbox" id="spectator-toggle" onchange="toggleSpectatorMode(this.checked)"> 👁️ Menonton
+                    </label>
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
                 </div>
             </div>
             <div class="track-lanes-wrapper" id="lanes-container"></div>
         </div>
 
-        <div class="countdown-box" id="countdown-box">
-            <div class="lights">
-                <div class="light" id="light-r"></div>
-                <div class="light" id="light-y"></div>
-                <div class="light" id="light-g"></div>
-            </div>
-            <div class="countdown-text" id="countdown-text">Engine Check...</div>
-            <div class="countdown-number" id="countdown-number">:10</div>
+        <div class="text-display" id="words-wrapper"></div>
+        
+        <div style="display: flex; gap: 12px; width: 100%; margin-bottom: 30px;">
+            <input type="text" id="input-box" placeholder="Menunggu balapan dimulai..." disabled oninput="handleTypingInput()">
+            <button id="ready-start-btn" class="btn btn-success" onclick="toggleReadyState()">READY 🏁</button>
         </div>
 
-        <div style="text-align: center; margin-bottom: 20px;">
-            <button id="view-scores-btn" class="btn btn-secondary" style="width: 100%; display: none;" onclick="openScoresModal()">Lihat Hasil Klasemen Akhir Balapan 📊</button>
-        </div>
-
-        <div class="track-container" style="padding: 12px; width: 100%;">
-            <div class="text-display" id="words-window-box">
-                <div class="words-line-container" id="words-wrapper">Menunggu Host memulai pertandingan...</div>
-            </div>
-        </div>
-
-        <div class="action-area">
-            <div class="input-container">
-                <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu Balapan Dimulai...">
-                
-                <button id="ready-toggle-btn" class="btn btn-secondary" style="display: none;" onclick="toggleReadyStatusAction()">🔴 BELUM READY</button>
-                
-                <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
-                
-                <button id="mid-game-reset-btn" class="btn btn-danger" onclick="abortAndResetMatchAction()" style="display: none;">Reset Tengah Match 🔄</button>
-                <button id="replay-btn" class="btn btn-success" onclick="requestReplayAction()" style="display: none;">Ulang Match 🔄</button>
-            </div>
-        </div>
     </div>
 
-    <div class="modal-overlay" id="garage-modal">
-        <div class="tournament-results" style="max-width: 550px;">
-            <h2 style="color: var(--accent-color); margin-top:0;">🏎️ GARASI KENDARAAN UTAMA 🏎️</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Pilih mesin balap andalan lo untuk turun ke sirkuit siber</p>
-            <div class="garage-grid">
-                <div class="garage-item selected-car" id="car-item-1" onclick="selectCarFromGarage('🚗', 'car-item-1')">
-                    <span class="car-img">🚗</span><span class="car-label">Sedan Merah</span>
-                </div>
-                <div class="garage-item" id="car-item-2" onclick="selectCarFromGarage('🏎️', 'car-item-2')">
-                    <span class="car-img">🏎️</span><span class="car-label">Mobil F1</span>
-                </div>
-                <div class="garage-item" id="car-item-3" onclick="selectCarFromGarage('🚓', 'car-item-3')">
-                    <span class="car-img">🚓</span><span class="car-label">Mobil Polisi</span>
-                </div>
-                <div class="garage-item" id="car-item-4" onclick="selectCarFromGarage('🚀', 'car-item-4')">
-                    <span class="car-img">🚀</span><span class="car-label">Roket</span>
-                </div>
-                <div class="garage-item" id="car-item-5" onclick="selectCarFromGarage('🛸', 'car-item-5')">
-                    <span class="car-img">🛸</span><span class="car-label">UFO</span>
-                </div>
-                <div class="garage-item" id="car-item-6" onclick="selectCarFromGarage('🏍️', 'car-item-6')">
-                    <span class="car-img">🏍️</span><span class="car-label">Motor GP</span>
-                </div>
-                <div class="garage-item" id="car-item-7" onclick="selectCarFromGarage('🚚', 'car-item-7')">
-                    <span class="car-img">🚚</span><span class="car-label">Truk Oleng</span>
-                </div>
-                <div class="garage-item" id="car-item-8" onclick="selectCarFromGarage('🛞', 'car-item-8')">
-                    <span class="car-img">🛞</span><span class="car-label">Monster Truck</span>
-                </div>
-                <div class="garage-item" id="car-item-9" onclick="selectCarFromGarage('🚇', 'car-item-9')">
-                    <span class="car-img">🚇</span><span class="car-label">Kereta Api</span>
-                </div>
-                <div class="garage-item" id="car-item-10" onclick="selectCarFromGarage('✈️', 'car-item-10')">
-                    <span class="car-img">✈️</span><span class="car-label">Pesawat Jet</span>
-                </div>
-                <div class="garage-item" id="car-item-11" onclick="selectCarFromGarage('🛩️', 'car-item-11')">
-                    <span class="car-img">🛩️</span><span class="car-label">Helikopter</span>
-                </div>
-                <div class="garage-item" id="car-item-12" onclick="selectCarFromGarage('🚲', 'car-item-12')">
-                    <span class="car-img">🚲</span><span class="car-label">Sepeda BMX</span>
-                </div>
-            </div>
-            <br>
-            <button class="btn btn-success" style="width:100%;" onclick="closeGarageModal()">Konfirmasi & Pasang Kendaraan</button>
+    <div class="chat-top-container chat-minimized" id="chat-sidebar-panel">
+        <div class="chat-header" onclick="toggleChatPanelAction()">
+            <span>💬 Live Chat Balapan</span>
+            <span id="chat-toggle-lbl" style="font-size: 0.8rem;">Maximize</span>
+        </div>
+        <div class="chat-messages" id="chat-messages-target"></div>
+        <div class="chat-input-wrapper">
+            <input type="text" id="chat-input-box" placeholder="Ketik pesan..." onkeydown="if(event.key === 'Enter') sendChatMessageAction()">
+            <button class="btn btn-primary" style="padding: 6px 12px; font-size:0.8rem;" onclick="sendChatMessageAction()">Kirim</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="results-modal">
         <div class="tournament-results">
-            <h2 style="color: var(--accent-color); margin-top:0;">📊 CLASSIFICATION RANKINGS 📊</h2>
-            <div style="background-color: rgba(15, 23, 42, 0.4); padding: 10px; border-radius: 8px;">
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Nama Player</th>
-                            <th>Kecepatan (WPM)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-rows-target"></tbody>
-                </table>
-            </div>
+            <h2 style="color:#4ade80; margin-top:0;">🏁 Hasil Balapan Final</h2>
+            <div id="leaderboard-container"></div>
             <br>
-            <button class="btn btn-danger" onclick="closeModalOnly()">Tutup Halaman Skor</button>
+            <button class="btn btn-primary" id="host-reset-btn" style="display:none; width:100%;" onclick="requestResetMatch()">Mulai Balapan Baru (Host) 🔄</button>
+            <p id="player-waiting-txt" style="color:var(--text-muted); font-style:italic;">Menunggu Host melakukan reset sirkuit...</p>
         </div>
     </div>
 
     <script>
-        const easyWords = [
-            "bisa", "buku", "pintu", "rumah", "dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "saya", "kamu", "akan", "dapat", "yang", "dari", "pada", "ke", "ini", "itu", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "with", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan"
-        ];
-        
-        const hardWords = [
-            "implementasi", "karakteristik", "sinkronisasi", "kontekstual", "infrastruktur", "kompleksitas", "fundamental", "konsekuensi", "asimetris", "metodologi", "transformasional", "restrukturisasi", "akuntabilitas", "profesionalisme", "standardisasi", "korelasional", "keanekaragaman", "pemberdayaan", "kesinambungan", "determinisme", "eksistensialisme", "epistemologi", "fenomenologi", "individualisme", "kapitalisme", "nasionalisme", "rasionalisme", "sekularisme", "spesialisasi", "meritokrasi", "birokratisasi", "industrialisasi", "modernisasi", "globalisasi", "digitalisasi", "otomatisasi", "komersialisasi", "institusional", "konstitusional", "multilateral", "kontradiktif", "kontemporer", "karakterisasi", "personifikasi", "intensifikasi", "diversifikasi", "kualifikasi", "sertifikasi", "identifikasi", "reorganisasi"
-        ];
-        
-        const punctuationMarks = [".", ",", "!", "?", ""];
-        
-        let socket;
-        let isOnlineMode = false;
-        let isServerHost = true;
-        let currentOnlineRoomId = "";
-        let isPanelCurrentlyOpen = true;
+        const socket = io();
+        let currentOnlineRoomId = null;
+        let isHostUser = false;
+        let mySelectedEmoji = "🚗";
+        let myName = "Racer";
+        let isSinglePlayer = false;
+
         let wordsList = [];
-        let wordLineMappings = []; 
-        let currentActiveLineIndex = 0;
         let currentWordIndex = 0;
-        let totalWordsInBatch = 0;
-        let totalKeystrokes = 0;
-        let correctKeystrokes = 0;
-        let startTime = null;
+        let totalWordsCount = 0;
         let gameActive = false;
-        let loopInterval;
-        let matchDurationTimeout;
-        let finishedRacersData = [];
-        let activeBots = [];
-        let isChatMuted = false;
-        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0, carEmoji: "🚗", isOnline: "online", isReady: false };
+        let typedCharactersCount = 0;
+        let currentTypedWord = "";
+        let amIReady = false;
+        let amISpectator = false;
 
-        let urlRoomCode = "";
-        let audioCtx = null;
-        
-        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-        
-        function playSound(type) {
-            if (type === 'chat' && isChatMuted) return;
-            try {
-                initAudio(); if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                const now = audioCtx.currentTime;
-                
-                if (type === 'chat') {
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, now);
-                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                    osc.start(now); osc.stop(now + 0.15);
-                } else if (type === 'beep') {
-                    osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now);
-                    gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                    osc.start(now); osc.stop(now + 0.1);
-                } else if (type === 'go') {
-                    osc.type = 'square'; osc.frequency.setValueAtTime(880, now);
-                    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                    osc.start(now); osc.stop(now + 0.3);
-                } else if (type === 'error') {
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, now); 
-                    gain.gain.setValueAtTime(0.18, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                    osc.start(now); osc.stop(now + 0.12);
-                }
-            } catch(e) {}
-        }
+        const mockWords = ["kecepatan", "sirkuit", "keyboard", "pemrograman", "balapan", "teknologi", "komputer", "internet", "modern", "gradasi", "neon", "kejuaraan", "juara", "akurat", "fokus", "mesin", "transmisi", "kecepatan", "racer", "dunia", "digital", "cyberpunk", "robot", "otomatis", "sistem", "kendaraan"];
 
-        function toggleMuteSoundAction(e) {
-            e.stopPropagation();
-            isChatMuted = !isChatMuted;
-            document.getElementById('chat-mute-btn').innerText = isChatMuted ? "🔇" : "🔊";
-        }
-
-        function startSinglePlayerMode() {
-            const nickname = document.getElementById('nickname-input').value.trim() || "RacerSolo";
-            playerData.name = nickname;
-            isOnlineMode = false;
-            isServerHost = true;
-            document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('main-arena').style.display = 'block';
-            document.getElementById('chat-sidebar-panel').style.display = 'block';
-            document.getElementById('bot-management-row').style.display = 'table-row';
-            document.getElementById('ready-toggle-btn').style.display = 'none';
-            applyHostAuthorizationUI();
-            renderLanesLocal();
-        }
-
-        function createNewOnlineRoom() {
-            const nickname = document.getElementById('nickname-input').value.trim() || "HostRacer";
-            playerData.name = nickname;
-            initSocketConnection();
-            socket.emit('createRoom', { playerName: nickname });
-        }
-
-        document.addEventListener("visibilitychange", () => {
-            if (!isOnlineMode) return;
-            const status = document.hidden ? 'offline' : 'online';
-            playerData.isOnline = status;
-            socket.emit('updateStatus', { roomId: currentOnlineRoomId, status: status });
-        });
-
-        function joinOnlineRoom() {
-            const nickname = document.getElementById('nickname-input').value.trim() || "GuestRacer";
-            const code = document.getElementById('roomcode-input').value.trim().toUpperCase();
-            if(!code) return alert("Isi KODE ROOM dulu, Bro!");
-            playerData.name = nickname;
-            initSocketConnection();
-            socket.emit('joinRoom', { roomId: code, playerName: nickname });
-        }
-
-        function selectCarFromSharePopup(emoji, elementId) {
-            document.querySelectorAll('#sharelink-join-modal .garage-item').forEach(el => el.classList.remove('selected-car'));
-            document.getElementById(elementId).classList.add('selected-car');
-            playerData.carEmoji = emoji;
-            document.getElementById('current-car-preview').innerText = emoji;
-        }
-
-        function confirmJoinViaShareLink() {
-            const nickname = document.getElementById('sharelink-nickname-input').value.trim() || "dimas";
-            playerData.name = nickname;
-            document.getElementById('sharelink-join-modal').classList.remove('active');
-            initSocketConnection();
-            socket.emit('joinRoom', { roomId: urlRoomCode, playerName: nickname });
-        }
-
-        function initSocketConnection() {
-            if (socket) return;
-            socket = io();
-            socket.on('joinSuccess', ({ roomId, isHost }) => {
-                isOnlineMode = true;
-                isServerHost = isHost;
-                currentOnlineRoomId = roomId;
-                document.getElementById('lobby-panel').style.display = 'none';
-                document.getElementById('main-arena').style.display = 'block';
-                document.getElementById('room-id-badge').style.display = 'block';
-                document.getElementById('room-code-txt').innerText = roomId;
-                document.getElementById('chat-sidebar-panel').style.display = 'block';
-                
-                const rdyBtn = document.getElementById('ready-toggle-btn');
-                if(!isServerHost) {
-                    rdyBtn.style.display = 'inline-block';
-                    playerData.isReady = false;
-                    rdyBtn.className = "btn btn-danger";
-                    rdyBtn.innerText = "🔴 BELUM READY";
-                } else {
-                    rdyBtn.style.display = 'none';
-                }
-
-                applyHostAuthorizationUI();
-                broadcastCarUpdate();
-            });
-
-            socket.on('roomData', (roomObject) => { renderLanesOnline(roomObject.players, roomObject.hostId); });
-
-            socket.on('settingsUpdated', (settings) => {
-                document.getElementById('game-mode').value = settings.gameMode;
-                document.getElementById('word-target-input').value = settings.wordTarget;
-                document.getElementById('time-select').value = settings.timeSelect;
-                document.getElementById('line-view-select').value = settings.lineView || "2";
-                document.getElementById('difficulty-select').value = settings.difficulty;
-                document.getElementById('punctuation-toggle').checked = settings.usePunctuation !== false;
-                document.getElementById('capitalize-toggle').checked = settings.useCapitalize !== false;
-                toggleModeSettings();
-                if(!gameActive && wordsList.length > 0) renderWords();
-            });
-
-            socket.on('tablePanelToggled', ({ isOpen }) => { isPanelCurrentlyOpen = isOpen; executePanelRenderUI(isOpen); });
-
-            socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
-                clearMatchStateData();
-                document.getElementById('ready-toggle-btn').style.display = 'none'; 
-                wordsList = incomingWords;
-                totalWordsInBatch = wordsList.length;
-                renderWords();
-                forceLockAndCloseChatUI();
-                executeVisualCountdownSequence();
-            });
-
-            socket.on('gagalMulai', ({ unreadyNames }) => {
-                const namesStr = unreadyNames.join(', ');
-                const wrapper = document.getElementById('words-wrapper');
-                wrapper.innerHTML = `<span class="unready-txt-alert">❌ Pertandingan Tidak Dapat Dimulai!<br>Player Berikut Belum Ready: [ ${namesStr} ]</span>`;
-                triggerScreenShakeEffect();
-            });
-
-            socket.on('forceResetMatch', () => {
-                clearMatchStateData();
-                document.getElementById('words-wrapper').innerText = "Match dibatalkan oleh Host.";
-            });
-
-            socket.on('receiveFinalData', (serverResults) => {
-                finishedRacersData = serverResults;
-                updateLivePodiumUI();
-                renderLeaderboardTableDOM();
-                document.getElementById('view-scores-btn').style.display = 'block';
-            });
-
-            socket.on('incomingChatMessage', ({ sender, text, senderId }) => {
-                playSound('chat');
-                const chatContainer = document.getElementById('chat-messages-target');
-                const isMe = (socket.id === senderId);
-                
-                const rowNode = document.createElement('div');
-                rowNode.className = isMe ? "chat-row row-self" : "chat-row row-other";
-                rowNode.innerHTML = `
-                    <div class="chat-msg-item">
-                        <strong>${sender}</strong>
-                        ${text}
-                    </div>
-                `;
-                chatContainer.appendChild(rowNode);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-                
-                const targetBubbleId = `bubble-${senderId}`;
-                triggerTrackBubbleAnim(targetBubbleId, text);
-            });
-
-            socket.on('hostChanged', (newHostId) => {
-                if(socket.id === newHostId) {
-                    isServerHost = true;
-                    alert("Lo ditunjuk jadi HOST Utama sekarang.");
-                    document.getElementById('ready-toggle-btn').style.display = 'none';
-                    applyHostAuthorizationUI();
-                }
-            });
-
-            socket.on('kickedMsg', (msg) => { alert(msg); leaveRoomAction(); });
-            socket.on('errorMsg', (msg) => { alert(msg); leaveRoomAction(); });
-            
-            socket.on('performReset', () => {
-                clearMatchStateData();
-                document.getElementById('words-wrapper').innerText = "Menunggu Host memulai pertandingan...";
-                
-                const rdyBtn = document.getElementById('ready-toggle-btn');
-                if (!isServerHost) {
-                    rdyBtn.style.display = 'inline-block';
-                    playerData.isReady = false;
-                    rdyBtn.className = "btn btn-danger";
-                    rdyBtn.innerText = "🔴 BELUM READY";
-                }
-
-                if (isServerHost) {
-                    const btn = document.getElementById('start-btn');
-                    btn.innerText = "Mulai Balapan";
-                    btn.style.display = "inline-block";
-                    document.getElementById('replay-btn').style.display = "none";
-                }
-            });
-        }
-
-        function toggleReadyStatusAction() {
-            if(!isOnlineMode || isServerHost) return;
-            playerData.isReady = !playerData.isReady;
-            const btn = document.getElementById('ready-toggle-btn');
-            if(playerData.isReady) {
-                btn.className = "btn btn-success";
-                btn.innerText = "🟢 UTAS/READY";
+        function toggleAccordionAction() {
+            const body = document.getElementById('accordion-content-body');
+            const btn = document.getElementById('accordion-toggle-btn');
+            if(body.classList.contains('collapsed')) {
+                body.classList.remove('collapsed');
+                btn.innerText = "Tutup ▲";
             } else {
-                btn.className = "btn btn-danger";
-                btn.innerText = "🔴 BELUM READY";
+                body.classList.add('collapsed');
+                btn.innerText = "Buka ▼";
             }
-            socket.emit('toggleReady', { roomId: currentOnlineRoomId, isReady: playerData.isReady });
-        }
-
-        // DRAG PANEL CHAT
-        const chatWindow = document.getElementById("chat-sidebar-panel");
-        const chatHeader = document.getElementById("chat-draggable-header");
-        let isDraggingChat = false; let chatOffsetX, chatOffsetY;
-
-        chatHeader.addEventListener("mousedown", (e) => {
-            if (e.target.tagName === "BUTTON" || e.target.classList.contains('mute-btn')) return;
-            isDraggingChat = true;
-            chatOffsetX = e.clientX - chatWindow.offsetLeft;
-            chatOffsetY = e.clientY - chatWindow.offsetTop;
-        });
-        document.addEventListener("mousemove", (e) => {
-            if (!isDraggingChat) return;
-            chatWindow.style.bottom = "auto"; chatWindow.style.right = "auto";
-            chatWindow.style.left = (e.clientX - chatOffsetX) + "px";
-            chatWindow.style.top = (e.clientY - chatOffsetY) + "px";
-        });
-        document.addEventListener("mouseup", () => { isDraggingChat = false; });
-
-        function applyHostAuthorizationUI() {
-            const elements = ['game-mode', 'time-select', 'word-target-input', 'difficulty-select', 'punctuation-toggle', 'capitalize-toggle', 'add-bot-btn', 'remove-bot-btn'];
-            elements.forEach(id => { if(document.getElementById(id)) document.getElementById(id).disabled = !isServerHost; });
-            document.getElementById('start-btn').style.display = isServerHost ? 'inline-block' : 'none';
         }
 
         function toggleModeSettings() {
             const mode = document.getElementById('game-mode').value;
-            document.getElementById('row-duration').style.display = mode === 'time' ? 'table-row' : 'none';
-            document.getElementById('row-word-count').style.display = mode === 'words' ? 'table-row' : 'none';
+            document.getElementById('row-duration').style.display = (mode === 'time') ? 'table-row' : 'none';
+            document.getElementById('row-word-count').style.display = (mode === 'words') ? 'table-row' : 'none';
         }
 
-        function broadcastSettings() {
-            if (!isOnlineMode || !isServerHost) return;
-            socket.emit('updateSettingsServer', {
-                roomId: currentOnlineRoomId,
-                gameMode: document.getElementById('game-mode').value,
-                wordTarget: document.getElementById('word-target-input').value,
-                timeSelect: document.getElementById('time-select').value,
-                lineView: document.getElementById('line-view-select').value,
-                difficulty: document.getElementById('difficulty-select').value,
-                usePunctuation: document.getElementById('punctuation-toggle').checked,
-                useCapitalize: document.getElementById('capitalize-toggle').checked
-            });
+        function selectCarFromSharePopup(emoji, elementId) {
+            document.querySelectorAll('#sharelink-garage-grid .garage-item').forEach(el => el.classList.remove('selected-car'));
+            document.getElementById(elementId).classList.add('selected-car');
+            mySelectedEmoji = emoji;
+            document.getElementById('main-car-select').value = emoji;
         }
 
-        function toggleAccordionAction() {
-            const panel = document.getElementById('accordion-content-body');
-            const btn = document.getElementById('accordion-toggle-btn');
-            if(panel.classList.contains('collapsed')) {
-                panel.classList.remove('collapsed'); btn.innerText = "Tutup Pengaturan ▲";
-                if(isOnlineMode && isServerHost) socket.emit('toggleTablePanel', { roomId: currentOnlineRoomId, isOpen: true });
-            } else {
-                panel.classList.add('collapsed'); btn.innerText = "Buka Pengaturan ▼";
-                if(isOnlineMode && isServerHost) socket.emit('toggleTablePanel', { roomId: currentOnlineRoomId, isOpen: false });
+        function updateMainVehicle(val) {
+            mySelectedEmoji = val;
+            if(currentOnlineRoomId) {
+                socket.emit('changeVehicle', { roomId: currentOnlineRoomId, emoji: val });
             }
-        }
-        function executePanelRenderUI(isOpen) {
-            const panel = document.getElementById('accordion-content-body');
-            const btn = document.getElementById('accordion-toggle-btn');
-            if(isOpen) { panel.classList.remove('collapsed'); btn.innerText = "Tutup Pengaturan ▲"; } 
-            else { panel.classList.add('collapsed'); btn.innerText = "Buka Pengaturan ▼"; }
         }
 
         function toggleChatPanelAction() {
-            if(gameActive && !playerData.isFinished) return;
-            const chatPanel = document.getElementById('chat-sidebar-panel');
-            const wrapper = document.getElementById('chat-collapsible-wrapper');
-            const btn = document.getElementById('chat-toggle-btn');
-            
-            if(chatPanel.classList.contains('chat-minimized')) {
-                chatPanel.classList.remove('chat-minimized');
-                wrapper.style.display = 'flex';
-                btn.innerText = "Minimize";
+            const panel = document.getElementById('chat-sidebar-panel');
+            const lbl = document.getElementById('chat-toggle-lbl');
+            if(panel.classList.contains('chat-minimized')) {
+                panel.classList.remove('chat-minimized');
+                lbl.innerText = "Minimize";
             } else {
-                chatPanel.classList.add('chat-minimized');
-                wrapper.style.display = 'none';
-                btn.innerText = "Maximize";
+                panel.classList.add('chat-minimized');
+                lbl.innerText = "Maximize";
             }
         }
 
-        function forceLockAndCloseChatUI() {
-            const chatPanel = document.getElementById('chat-sidebar-panel');
-            chatPanel.classList.add('chat-minimized');
-            document.getElementById('chat-collapsible-wrapper').style.display = 'none';
-            document.getElementById('chat-toggle-btn').innerText = "Maximize";
+        function startSinglePlayerMode() {
+            isSinglePlayer = true;
+            myName = document.getElementById('nickname-input').value.trim() || "Racer_Solo";
+            document.getElementById('lobby-panel').style.display = 'none';
+            document.getElementById('main-arena').style.display = 'block';
+            document.getElementById('role-text').innerText = "SOLO RACER";
+            generateLocalWords();
+            renderTrackOffline();
         }
 
-        function unlockAndOpenChatUI() {
-            const chatPanel = document.getElementById('chat-sidebar-panel');
-            chatPanel.classList.remove('chat-minimized');
-            document.getElementById('chat-collapsible-wrapper').style.display = 'flex';
-            document.getElementById('chat-toggle-btn').innerText = "Minimize";
+        function generateLocalWords() {
+            wordsList = [];
+            const target = parseInt(document.getElementById('word-target-input').value) || 25;
+            for(let i=0; i<target; i++) {
+                wordsList.push(mockWords[Math.floor(Math.random() * mockWords.length)]);
+            }
+            totalWordsCount = wordsList.length;
+            renderWords();
         }
 
-        function insertEmojiToInput(emoji) {
-            const input = document.getElementById('chat-input-box');
-            input.value += emoji;
-            input.focus();
-        }
-
-        function openGarageModal() { document.getElementById('garage-modal').classList.add('active'); }
-        function closeGarageModal() { document.getElementById('garage-modal').classList.remove('active'); }
-        function selectCarFromGarage(emoji, elementId) {
-            document.querySelectorAll('.garage-item').forEach(el => el.classList.remove('selected-car'));
-            document.getElementById(elementId).classList.add('selected-car');
-            playerData.carEmoji = emoji;
-            document.getElementById('current-car-preview').innerText = emoji;
-            if(!isOnlineMode) renderLanesLocal();
-            else broadcastCarUpdate();
-        }
-
-        function togglePodiumView() { document.getElementById('live-podium-widget').classList.toggle('podium-collapsed'); }
-        function broadcastCarUpdate() { if(isOnlineMode) socket.emit('updateCar', { roomId: currentOnlineRoomId, carEmoji: playerData.carEmoji }); }
-
-        function addBot() {
-            if(activeBots.length >= 4) return alert("Maksimal lintasan menampung 4 Bot!");
-            const id = 'bot_' + Math.random().toString(36).substring(2,5);
-            const names = ["Bot_Schumacher", "Bot_Hamilton", "Bot_Verstappen", "Bot_Toretto"];
-            const speed = Math.floor(Math.random() * 20) + 45; 
-            activeBots.push({ id, name: names[activeBots.length % names.length], carEmoji: "🤖", baseWpm: speed, currentWpm: 0, progressPercent: 0, isFinished: false, isOnline: "online" });
-            renderLanesLocal();
-        }
-        function removeBot() { activeBots.pop(); renderLanesLocal(); }
-
-        function renderLanesLocal() {
-            const container = document.getElementById('lanes-container'); container.innerHTML = "";
-            container.appendChild(createLaneDOM(playerData.id, playerData.name, playerData.carEmoji, playerData.currentWpm, playerData.progressPercent, false, true, playerData.isOnline, true, false));
-            activeBots.forEach(bot => { container.appendChild(createLaneDOM(bot.id, bot.name, bot.carEmoji, bot.currentWpm, bot.progressPercent, true, false, bot.isOnline, true, false)); });
-        }
-        
-        function renderLanesOnline(playersObj, hostId) {
-            const container = document.getElementById('lanes-container'); container.innerHTML = "";
-            Object.keys(playersObj).forEach(pId => {
-                const p = playersObj[pId]; const isMe = (pId === socket.id);
-                const status = p.isOnline || 'online';
-                const isHost = (pId === hostId);
-                container.appendChild(createLaneDOM(p.id, isMe ? `${p.name} (Lo)` : p.name, p.carEmoji, p.currentWpm, p.progressPercent, false, isMe, status, p.isReady, isHost));
+        function renderWords() {
+            const wrapper = document.getElementById('words-wrapper');
+            wrapper.innerHTML = "";
+            wordsList.forEach((w, idx) => {
+                const span = document.createElement('span');
+                span.className = "word" + (idx === 0 ? " current" : "");
+                span.id = `word-${idx}`;
+                span.innerText = w;
+                wrapper.appendChild(span);
             });
         }
 
-        function createLaneDOM(id, name, emoji, wpm, progress, isBotItem, isMe = false, status = 'online', isReady = false, isHost = false) {
-            const lane = document.createElement('div');
-            lane.className = "track-lane";
-            let kickBtnHtml = (isOnlineMode && isServerHost && !isMe) ? `<button class="kick-btn" onclick="kickOnlinePlayerAction('${id}')">❌</button>` : "";
-            const bubbleDomId = `bubble-${id}`;
-            const dotClass = status === 'offline' ? 'offline' : 'online';
-            
-            let readyLabel = "";
-            if (isOnlineMode) {
-                if (isHost) {
-                    readyLabel = `<span class="ready-badge" style="background-color:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid #38bdf8;">HOST</span>`;
-                } else {
-                    readyLabel = isReady ? `<span class="ready-badge badge-is-ready">READY</span>` : `<span class="ready-badge badge-not-ready">NOT READY</span>`;
-                }
-            }
-
-            lane.innerHTML = `
-                <div class="lane-info">
-                    <span><span class="status-dot ${dotClass}"></span><strong>${name}</strong> ${readyLabel} ${kickBtnHtml}</span>
-                    <span class="wpm-counter"><span id="wpm-val-${id}">${wpm}</span> WPM</span>
+        function renderTrackOffline() {
+            const container = document.getElementById('lanes-container');
+            container.innerHTML = `
+                <div class="track-lane">
+                    <div class="lane-info">🏁 <strong>${myName} (Kamu)</strong> <span class="wpm-counter" id="wpm-offline-me">0 WPM</span></div>
+                    <div class="car-node-wrapper" id="car-offline-me" style="left: 0%;">
+                        <div class="car">${mySelectedEmoji}</div>
+                    </div>
                 </div>
-                <div class="car-node-wrapper" id="node-${id}" style="left: calc(${progress}% - ${progress > 0 ? (progress * 0.9) : 0}px);">
-                    <div class="car-bubble" id="${bubbleDomId}"></div>
-                    <div class="car">${emoji}</div>
+                <div class="track-lane">
+                    <div class="lane-info">🤖 <strong>Cyber Bot Lawan</strong> <span class="wpm-counter" id="wpm-offline-bot">0 WPM</span></div>
+                    <div class="car-node-wrapper" id="car-offline-bot" style="left: 0%;">
+                        <div class="car">🏎️</div>
+                    </div>
                 </div>
             `;
-            return lane;
         }
 
-        function triggerTrackBubbleAnim(bubbleId, text) {
-            const b = document.getElementById(bubbleId);
-            if(b) {
-                b.innerText = text; b.classList.add('active');
-                clearTimeout(b.timerId); b.timerId = setTimeout(() => b.classList.remove('active'), 2500);
+        function toggleReadyState() {
+            if(isSinglePlayer) {
+                startOfflineCountdown();
+                return;
             }
+            amIReady = !amIReady;
+            socket.emit('toggleReady', { roomId: currentOnlineRoomId, isReady: amIReady });
+            document.getElementById('ready-start-btn').innerText = amIReady ? "READY ✔️" : "READY 🏁";
+            document.getElementById('ready-start-btn').style.background = amIReady ? "#4ade80" : "var(--accent-gradient)";
         }
 
-        function generateWordsBatch() {
-            const target = parseInt(document.getElementById('word-target-input').value) || 25;
-            const diff = document.getElementById('difficulty-select').value;
-            const usePunc = document.getElementById('punctuation-toggle').checked;
-            const useCap = document.getElementById('capitalize-toggle').checked;
-            const sourcePool = diff === 'hard' ? hardWords : easyWords;
-            let res = [];
-            for(let i=0; i<target; i++) {
-                let w = sourcePool[Math.floor(Math.random() * sourcePool.length)];
-                if(useCap && Math.random() > 0.6) w = w.charAt(0).toUpperCase() + w.slice(1);
-                if(usePunc && Math.random() > 0.85) w += punctuationMarks[Math.floor(Math.random() * punctuationMarks.length)];
-                res.push(w);
-            }
-            return res;
-        }
-
-        function startGameCountdown() {
-            if(isOnlineMode) {
-                if(!isServerHost) return;
-                socket.emit('triggerCountdownServer', { roomId: currentOnlineRoomId, wordsList: generateWordsBatch() });
+        function toggleSpectatorMode(isSpectator) {
+            amISpectator = isSpectator;
+            const inpBox = document.getElementById('input-box');
+            
+            if (isSpectator) {
+                inpBox.disabled = true;
+                inpBox.placeholder = "Mode Menonton Aktif 👁️";
+                document.getElementById('ready-start-btn').style.display = 'none';
             } else {
-                clearMatchStateData(); wordsList = generateWordsBatch(); totalWordsInBatch = wordsList.length;
-                renderWords(); forceLockAndCloseChatUI(); executeVisualCountdownSequence();
+                inpBox.placeholder = "Menunggu balapan dimulai...";
+                document.getElementById('ready-start-btn').style.display = 'block';
+            }
+
+            if (currentOnlineRoomId) {
+                socket.emit('toggleSpectator', { roomId: currentOnlineRoomId, isSpectator: isSpectator });
+            } else if (isSinglePlayer) {
+                alert("Mode menonton hanya didukung di kamar online!");
+                document.getElementById('spectator-toggle').checked = false;
             }
         }
 
-        function executeVisualCountdownSequence() {
-            const box = document.getElementById('countdown-box'); const txt = document.getElementById('countdown-text'); const num = document.getElementById('countdown-number');
-            const r = document.getElementById('light-r'); const y = document.getElementById('light-y'); const g = document.getElementById('light-g');
-            document.getElementById('start-btn').style.display = "none";
-            document.getElementById('mid-game-reset-btn').style.display = isServerHost ? "inline-block" : "none";
-            box.style.display = 'flex';
-            let sec = 10; num.innerText = `:${sec}`;
-
-            let timer = setInterval(() => {
-                sec--; num.innerText = `:${sec}`;
-                if(sec > 5) { txt.innerText = "Engine Checking..."; playSound('beep'); } 
-                else if(sec <= 5 && sec > 2) { txt.innerText = "READY UP!"; r.classList.add('light-red-active'); playSound('beep'); } 
-                else if(sec <= 2 && sec > 0) { txt.innerText = "GET SET..."; y.classList.add('light-yellow-active'); playSound('beep'); } 
-                else if(sec === 0) {
-                    clearInterval(timer); txt.innerText = "GO GO GO!!!"; g.classList.add('light-green-active'); playSound('go');
-                    setTimeout(() => { box.style.display = 'none'; r.className = 'light'; y.className = 'light'; g.className = 'light'; triggerActualGameLaunch(); }, 800);
+        function startOfflineCountdown() {
+            document.getElementById('ready-start-btn').style.display = 'none';
+            let sec = 3;
+            const inp = document.getElementById('input-box');
+            inp.placeholder = `Mulai dalam ${sec}...`;
+            const timer = setInterval(() => {
+                sec--;
+                if(sec <= 0) {
+                    clearInterval(timer);
+                    inp.disabled = false;
+                    inp.placeholder = "KETIK KATA DI SINI!!";
+                    inp.focus();
+                    gameActive = true;
+                    startBotMovement();
+                } else {
+                    inp.placeholder = `Mulai dalam ${sec}...`;
                 }
             }, 1000);
         }
 
-        /* --- PERBAIKAN UTAMA: SISTEM WINDOWING SCROLL BARIS KATA DINAMIS --- */
-        function renderWords() {
-            const wrapper = document.getElementById('words-wrapper'); 
-            wrapper.innerHTML = "";
-            wordLineMappings = []; 
-            currentActiveLineIndex = 0;
-            
-            const lineView = document.getElementById('line-view-select').value;
-            let currentLineIndices = [];
-            const maxWordsPerLine = lineView === '1' ? 6 : (lineView === '2' ? 9 : 11);
-
-            if (lineView === 'all') {
-                let currentLineDiv = document.createElement('div');
-                currentLineDiv.className = "word-line";
-                wrapper.appendChild(currentLineDiv);
-                
-                wordsList.forEach((word, idx) => {
-                    const span = document.createElement('span');
-                    span.className = idx === 0 ? "word current" : "word";
-                    span.id = `word-${idx}`; 
-                    span.innerText = word;
-                    currentLineDiv.appendChild(span);
-                    currentLineIndices.push(idx);
-                });
-                wordLineMappings.push(currentLineIndices);
-                return;
-            }
-
-            // Memetakan kata ke kelompok baris virtual secara teratur
-            wordsList.forEach((word, idx) => {
-                currentLineIndices.push(idx);
-                if (currentLineIndices.length >= maxWordsPerLine || idx === wordsList.length - 1) {
-                    wordLineMappings.push(currentLineIndices);
-                    currentLineIndices = [];
+        let botPercent = 0;
+        function startBotMovement() {
+            if(!gameActive) return;
+            const botInterval = setInterval(() => {
+                if(!gameActive) { clearInterval(botInterval); return; }
+                botPercent += Math.floor(Math.random() * 4) + 1;
+                if(botPercent >= 100) {
+                    botPercent = 100;
+                    clearInterval(botInterval);
                 }
-            });
-
-            // Hanya me-render jumlah baris yang dipilih user ke dalam DOM (Sirkulasi Windowing)
-            const allowedLines = parseInt(lineView);
-            for (let i = 0; i < allowedLines; i++) {
-                if (!wordLineMappings[i]) break; 
-                
-                const lineDiv = document.createElement('div');
-                lineDiv.className = "word-line";
-                lineDiv.setAttribute('data-line-idx', i);
-                
-                wordLineMappings[i].forEach(idx => {
-                    const span = document.createElement('span');
-                    span.className = idx === currentWordIndex ? "word current" : "word";
-                    span.id = `word-${idx}`; 
-                    span.innerText = wordsList[idx];
-                    lineDiv.appendChild(span);
-                });
-                wrapper.appendChild(lineDiv);
-            }
+                document.getElementById('car-offline-bot').style.left = botPercent + "%";
+                document.getElementById('wpm-offline-bot').innerText = Math.floor(botPercent * 0.6) + 30 + " WPM";
+                if(botPercent === 100 && currentWordIndex < totalWordsCount) {
+                    endGameAction("Kalah! Bot duluan yang finish. Coba lagi!");
+                }
+            }, 800);
         }
 
-        /* --- PERBAIKAN UTAMA: COCOK & SEGERA HAPUS BARIS LAMA, GENERATE BARIS BARU --- */
-        function handleAutoLineScrollingLogic() {
-            const lineView = document.getElementById('line-view-select').value;
-            if (lineView === 'all') return;
-            
-            const wrapper = document.getElementById('words-wrapper');
-            const linesInDom = wrapper.getElementsByClassName('word-line');
-            if (linesInDom.length === 0) return;
+        function handleTypingInput() {
+            if(!gameActive || amISpectator) return;
+            const inp = document.getElementById('input-box');
+            const currentTyped = inp.value;
+            const targetWord = wordsList[currentWordIndex];
 
-            // Membaca baris teratas yang ada di DOM saat ini
-            const firstLineDom = linesInDom[0];
-            const firstLineIdx = parseInt(firstLineDom.getAttribute('data-line-idx'));
-            
-            const targetLineIndices = wordLineMappings[firstLineIdx];
-            const lastWordIdxInFirstLine = targetLineIndices[targetLineIndices.length - 1];
+            const currentSpan = document.getElementById(`word-${currentWordIndex}`);
 
-            // Jika indeks ketikan saat ini melompat melewati kata terakhir baris atas, baris atas dihancurkan dari DOM
-            if (currentWordIndex > lastWordIdxInFirstLine) {
-                firstLineDom.remove();
-                
-                // Cari data baris antrean selanjutnya yang belum dipasang untuk menyeimbangkan tinggi kontainer
-                const allowedLines = parseInt(lineView);
-                const nextLineToRenderIdx = firstLineIdx + allowedLines;
-
-                if (wordLineMappings[nextLineToRenderIdx]) {
-                    const lineDiv = document.createElement('div');
-                    lineDiv.className = "word-line";
-                    lineDiv.setAttribute('data-line-idx', nextLineToRenderIdx);
+            if(currentTyped.endsWith(" ")) {
+                const cleanWord = currentTyped.trim();
+                if(cleanWord === targetWord) {
+                    currentSpan.className = "word completed";
+                    typedCharactersCount += targetWord.length + 1;
+                    currentWordIndex++;
+                    inp.value = "";
                     
-                    wordLineMappings[nextLineToRenderIdx].forEach(idx => {
-                        const span = document.createElement('span');
-                        span.className = idx === currentWordIndex ? "word current" : "word";
-                        span.id = `word-${idx}`; 
-                        span.innerText = wordsList[idx];
-                        lineDiv.appendChild(span);
-                    });
-                    wrapper.appendChild(lineDiv);
-                }
-            }
-        }
+                    let progress = Math.floor((currentWordIndex / totalWordsCount) * 100);
+                    if(progress > 100) progress = 100;
 
-        function applyLineViewLimit() {
-            // Dikosongkan karena rotasi baris telah dikontrol ketat oleh manipulasi DOM langsung di fungsi atas.
-        }
-
-        function triggerActualGameLaunch() {
-            gameActive = true; playerData.gameActiveRun = true; startTime = new Date();
-            const boxInput = document.getElementById('input-box');
-            boxInput.disabled = false; boxInput.placeholder = "Tancap gass ketik disini..."; boxInput.focus();
-
-            if(document.getElementById('game-mode').value === 'time') {
-                const dur = parseInt(document.getElementById('time-select').value) || 60;
-                document.getElementById('live-timer-banner').style.display = 'block';
-                let remaining = dur; document.getElementById('live-seconds-countdown').innerText = remaining;
-                matchDurationTimeout = setInterval(() => {
-                    remaining--; document.getElementById('live-seconds-countdown').innerText = remaining;
-                    if(remaining <= 0) terminateMatchEndSequence();
-                }, 1000);
-            }
-
-            loopInterval = setInterval(() => {
-                if(!isOnlineMode) { processBotsSimulatedEngine(); renderLanesLocal(); checkLocalMatchCompletionCondition(); } 
-                else { sendProgressOnlineBroadcast(); }
-            }, 400);
-        }
-
-        function processBotsSimulatedEngine() {
-            activeBots.forEach(bot => {
-                if(bot.isFinished) return;
-                bot.currentWpm = Math.max(25, Math.floor(bot.baseWpm + (Math.random() * 8 - 4)));
-                if(document.getElementById('game-mode').value === 'words') {
-                    bot.progressPercent = Math.min(100, bot.progressPercent + ((bot.currentWpm / 60) * 5 / (totalWordsInBatch * 5)) * 100);
-                    if(bot.progressPercent >= 100) { bot.isFinished = true; registerLocalRacerFinished(bot.name, bot.currentWpm, bot.carEmoji, true); }
-                } else {
-                    const elapsed = (new Date() - startTime) / 1000;
-                    bot.progressPercent = Math.min(100, (elapsed / (parseInt(document.getElementById('time-select').value) || 60)) * 100);
-                }
-            });
-        }
-
-        function sendProgressOnlineBroadcast() {
-            if(playerData.isFinished) return;
-            calculateLiveStatsWpmProgress();
-            socket.emit('updateProgress', { roomId: currentOnlineRoomId, progressPercent: playerData.progressPercent, currentWpm: playerData.currentWpm });
-        }
-
-        function calculateLiveStatsWpmProgress() {
-            if(!startTime) return;
-            const elapsedMins = (new Date() - startTime) / 60000; if(elapsedMins <= 0) return;
-            playerData.currentWpm = Math.floor((correctKeystrokes / 5) / elapsedMins);
-            if(document.getElementById('game-mode').value === 'words') {
-                playerData.progressPercent = Math.min(100, (currentWordIndex / totalWordsInBatch) * 100);
-            } else {
-                playerData.progressPercent = Math.min(100, (((new Date() - startTime) / 1000) / (parseInt(document.getElementById('time-select').value) || 60)) * 100);
-            }
-        }
-
-        const boxInputNode = document.getElementById('input-box');
-        boxInputNode.addEventListener('input', () => {
-            if(!gameActive || playerData.isFinished) return;
-            const typedValue = boxInputNode.value; const currentTargetWord = wordsList[currentWordIndex];
-            totalKeystrokes++;
-
-            if(typedValue.endsWith(" ") || typedValue.endsWith("Enter")) {
-                if(typedValue.trim() === currentTargetWord) {
-                    correctKeystrokes += (currentTargetWord.length + 1);
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word completed';
-                    
-                    currentWordIndex++; boxInputNode.value = ""; boxInputNode.className = "";
-                    handleAutoLineScrollingLogic(); calculateLiveStatsWpmProgress();
-                    if(!isOnlineMode) renderLanesLocal();
-
-                    if(currentWordIndex >= totalWordsInBatch) {
-                        playerData.isFinished = true; playerData.progressPercent = 100;
-                        boxInputNode.disabled = true; boxInputNode.value = "FINISH!";
-                        unlockAndOpenChatUI();
-
-                        if(isOnlineMode) socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
-                        else registerLocalRacerFinished(playerData.name, playerData.currentWpm, playerData.carEmoji, false);
+                    // Update real-time progress ke server/local sirkuit
+                    let dummyWpm = Math.floor((typedCharactersCount / 5) / 0.2) || 45; 
+                    if(isSinglePlayer) {
+                        document.getElementById('car-offline-me').style.left = progress + "%";
+                        document.getElementById('wpm-offline-me').innerText = dummyWpm + " WPM";
+                        if(currentWordIndex >= totalWordsCount) {
+                            endGameAction("Selamat! Lu Juara 1 di Sirkuit Offline! 🔥");
+                        }
                     } else {
-                        if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current';
+                        socket.emit('updateProgress', { roomId: currentOnlineRoomId, progressPercent: progress, currentWpm: dummyWpm });
+                    }
+
+                    if(currentWordIndex < totalWordsCount) {
+                        document.getElementById(`word-${currentWordIndex}`).className = "word current";
                     }
                 } else {
-                    triggerScreenShakeEffect();
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current error';
-                    boxInputNode.className = "input-error";
+                    currentSpan.className = "word current error";
                 }
             } else {
-                if (currentTargetWord.startsWith(typedValue)) {
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current';
-                    boxInputNode.className = "";
+                if(targetWord.startsWith(currentTyped)) {
+                    currentSpan.className = "word current";
                 } else {
-                    triggerScreenShakeEffect();
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current error';
-                    boxInputNode.className = "input-error";
+                    currentSpan.className = "word current error";
                 }
             }
+        }
+
+        function endGameAction(msg) {
+            gameActive = false;
+            document.getElementById('input-box').disabled = true;
+            alert(msg);
+            document.getElementById('ready-start-btn').style.display = 'block';
+            document.getElementById('ready-start-btn').innerText = "MAIN LAGI 🔄";
+            currentWordIndex = 0;
+            botPercent = 0;
+            typedCharactersCount = 0;
+        }
+
+        // --- ROOM ONLINE MANAGEMENT ---
+        function createNewOnlineRoom() {
+            myName = document.getElementById('nickname-input').value.trim() || "HostRacer";
+            socket.emit('createRoom', { playerName: myName });
+        }
+
+        function joinOnlineRoom() {
+            const code = document.getElementById('roomcode-input').value.trim().toUpperCase();
+            if(!code) return alert("Isi kode room dulu!");
+            myName = document.getElementById('nickname-input').value.trim() || "GuestRacer";
+            socket.emit('joinRoom', { roomId: code, playerName: myName });
+        }
+
+        function confirmJoinViaShareLink() {
+            const code = urlRoomCode;
+            myName = document.getElementById('sharelink-nickname-input').value.trim() || "GuestRacer";
+            socket.emit('joinRoom', { roomId: code, playerName: myName });
+            document.getElementById('sharelink-join-modal').classList.remove('active');
+        }
+
+        socket.on('joinSuccess', ({ roomId, isHost }) => {
+            currentOnlineRoomId = roomId;
+            isHostUser = isHost;
+            isSinglePlayer = false;
+            document.getElementById('lobby-panel').style.display = 'none';
+            document.getElementById('main-arena').style.display = 'block';
+            document.getElementById('room-id-badge').style.display = 'inline-block';
+            document.getElementById('room-code-txt').innerText = roomId;
+            document.getElementById('role-text').innerText = isHost ? "ROOM HOST" : "PLAYER RACER";
+            document.getElementById('host-reset-btn').style.display = isHost ? 'block' : 'none';
+            
+            // Set emoji awal ke server
+            socket.emit('changeVehicle', { roomId: roomId, emoji: mySelectedEmoji });
         });
 
-        function triggerScreenShakeEffect() {
-            playSound('error');
-            const arena = document.getElementById('race-track-card');
-            arena.classList.add('shake-active');
-            setTimeout(() => arena.classList.remove('shake-active'), 150);
+        socket.on('errorMsg', (msg) => alert(msg));
+
+        socket.on('settingsUpdated', (settings) => {
+            document.getElementById('game-mode').value = settings.gameMode;
+            document.getElementById('word-target-input').value = settings.wordTarget;
+            document.getElementById('time-select').value = settings.timeSelect;
+            toggleModeSettings();
+        });
+
+        function broadcastSettings() {
+            if(!isHostUser || !currentOnlineRoomId) return;
+            const settings = {
+                gameMode: document.getElementById('game-mode').value,
+                wordTarget: parseInt(document.getElementById('word-target-input').value) || 25,
+                timeSelect: document.getElementById('time-select').value
+            };
+            socket.emit('updateSettings', { roomId: currentOnlineRoomId, settings });
         }
 
-        function checkLocalMatchCompletionCondition() { if(playerData.isFinished && activeBots.every(b => b.isFinished)) terminateMatchEndSequence(); }
+        socket.on('roomData', (room) => {
+            wordsList = room.textWords || [];
+            totalWordsCount = wordsList.length;
 
-        function terminateMatchEndSequence() {
-            gameActive = false; clearInterval(loopInterval); clearInterval(matchDurationTimeout);
-            document.getElementById('input-box').disabled = true;
-            document.getElementById('live-timer-banner').style.display = 'none';
-            unlockAndOpenChatUI();
+            const lanesContainer = document.getElementById('lanes-container');
+            lanesContainer.innerHTML = '';
 
-            if(!isOnlineMode) {
-                if(!playerData.isFinished) { playerData.isFinished = true; registerLocalRacerFinished(playerData.name, playerData.currentWpm, playerData.carEmoji, false); }
-                updateLivePodiumUI(); renderLeaderboardTableDOM(); openScoresModal();
-                if(isServerHost) {
-                    const btn = document.getElementById('start-btn'); btn.innerText = "Ulang Match 🔄"; btn.style.display = "inline-block";
-                    btn.onclick = () => { clearMatchStateData(); renderLanesLocal(); startGameCountdown(); };
+            Object.keys(room.players).forEach((pId) => {
+                const p = room.players[pId];
+                
+                // JIKA PEMAIN DALAM MODE MENONTON, TIDAK MASUK/DIRENDER DI ARENA LINTASAN
+                if (p.isSpectator) {
+                    return;
                 }
+
+                const lane = document.createElement('div');
+                lane.className = "track-lane";
+                
+                const statusStr = p.isReady ? '<span class="ready-badge badge-is-ready">READY</span>' : '<span class="ready-badge badge-not-ready">WAIT</span>';
+                
+                lane.innerHTML = `
+                    <div class="lane-info">
+                        🏎️ <strong>${p.name}</strong> ${statusStr} 
+                        <span class="wpm-counter">${p.currentWpm} WPM</span>
+                    </div>
+                    <div class="car-node-wrapper" style="left: ${p.progressPercent}%;">
+                        <div class="car">${p.carEmoji || '🚗'}</div>
+                    </div>
+                `;
+                lanesContainer.innerHTML += lane.outerHTML;
+            });
+
+            updatePodiumLive(room.players);
+        });
+
+        function updatePodiumLive(players) {
+            const arr = Object.values(players).filter(p => !p.isSpectator);
+            arr.sort((a,b) => b.progressPercent - a.progressPercent);
+
+            if(arr[0]) {
+                document.getElementById('podium-1-meta').innerText = `${arr[0].name}\n(${arr[0].currentWpm} Wpm)`;
+                document.getElementById('podium-1-car').innerText = arr[0].carEmoji;
+            }
+            if(arr[1]) {
+                document.getElementById('podium-2-meta').innerText = `${arr[1].name}\n(${arr[1].currentWpm} Wpm)`;
+                document.getElementById('podium-2-car').innerText = arr[1].carEmoji;
             } else {
-                if(!playerData.isFinished) { playerData.isFinished = true; socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji }); }
-                if(isServerHost) document.getElementById('replay-btn').style.display = "inline-block";
+                document.getElementById('podium-2-meta').innerText = "Menunggu...";
+                document.getElementById('podium-2-car').innerText = "🏁";
+            }
+            if(arr[2]) {
+                document.getElementById('podium-3-meta').innerText = `${arr[2].name}\n(${arr[2].currentWpm} Wpm)`;
+                document.getElementById('podium-3-car').innerText = arr[2].carEmoji;
+            } else {
+                document.getElementById('podium-3-meta').innerText = "Menunggu...";
+                document.getElementById('podium-3-car').innerText = "🏁";
             }
         }
 
-        function registerLocalRacerFinished(name, wpm, emoji, isBot) {
-            if(finishedRacersData.some(r => r.name === name)) return;
-            finishedRacersData.push({ name, wpm, isPlayer: !isBot, emoji });
-            finishedRacersData.sort((a,b) => b.wpm - a.wpm);
-            updateLivePodiumUI();
+        socket.on('startCountdown', () => {
+            let cnt = 3;
+            const inp = document.getElementById('input-box');
+            inp.placeholder = `MENYIAPKAN MESIN SIRKUIT: ${cnt}`;
+            if(!amISpectator) renderWords();
+
+            const cd = setInterval(() => {
+                cnt--;
+                if(cnt <= 0) {
+                    clearInterval(cd);
+                    gameActive = true;
+                    if(!amISpectator) {
+                        inp.disabled = false;
+                        inp.placeholder = "BALAPAN DIMULAI! KETIK KATA DI SINI!";
+                        inp.focus();
+                    } else {
+                        inp.placeholder = "Balapan berlangsung (Mode Menonton) 👁️";
+                    }
+                } else {
+                    inp.placeholder = `MENYIAPKAN MESIN SIRKUIT: ${cnt}`;
+                }
+            }, 1000);
+        });
+
+        socket.on('receiveFinalData', (results) => {
+            document.getElementById('results-modal').classList.add('active');
+            const target = document.getElementById('leaderboard-container');
+            target.innerHTML = `
+                <table style="width:100%; border-collapse:collapse; color:#fff;">
+                    <tr style="border-bottom:2px solid #334155; text-align:left;">
+                        <th style="padding:10px;">Posisi</th>
+                        <th>Racer</th>
+                        <th>Kendaraan</th>
+                        <th>Kecepatan Final</th>
+                    </tr>
+                    ${results.map((r, i) => `
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                            <td style="padding:10px; font-weight:bold; color:#00f2fe;">#${i+1}</td>
+                            <td>${r.name}</td>
+                            <td>${r.emoji}</td>
+                            <td style="color:#4ade80; font-weight:bold;">${r.wpm} WPM</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+        });
+
+        function requestResetMatch() {
+            socket.emit('requestReset', { roomId: currentOnlineRoomId });
         }
 
-        function updateLivePodiumUI() {
-            for(let rank=1; rank<=3; rank++) {
-                const data = finishedRacersData[rank-1]; const metaNode = document.getElementById(`podium-${rank}-meta`); const carNode = document.getElementById(`podium-${rank}-car`);
-                if(data) { metaNode.innerText = `${data.name}\n${data.wpm} WPM`; carNode.innerText = data.emoji; } 
-                else { metaNode.innerText = "Menunggu..."; carNode.innerText = "🏁"; }
-            }
-        }
-
-        function renderLeaderboardTableDOM() {
-            const tbody = document.getElementById('results-modal').querySelector('#leaderboard-rows-target');
-            if(tbody) {
-                tbody.innerHTML = "";
-                finishedRacersData.forEach((r, idx) => {
-                    const tr = document.createElement('tr'); tr.innerHTML = `<td><strong>#${idx+1}</strong></td><td>${r.emoji} ${r.name}</td><td>${r.wpm} WPM</td>`;
-                    tbody.appendChild(tr);
-                });
-            }
-        }
+        socket.on('performReset', () => {
+            document.getElementById('results-modal').classList.remove('active');
+            const inp = document.getElementById('input-box');
+            inp.value = "";
+            inp.disabled = true;
+            inp.placeholder = amISpectator ? "Mode Menonton Aktif 👁️" : "Menunggu balapan dimulai...";
+            currentWordIndex = 0;
+            typedCharactersCount = 0;
+            gameActive = false;
+            amIReady = false;
+            document.getElementById('ready-start-btn').innerText = "READY 🏁";
+            document.getElementById('ready-start-btn').style.background = "var(--accent-gradient)";
+        });
 
         function sendChatMessageAction() {
-            const inp = document.getElementById('chat-input-box'); const val = inp.value.trim(); if(!val) return;
-            if(isOnlineMode) {
-                socket.emit('sendChatMessage', { roomId: currentOnlineRoomId, sender: playerData.name, text: val, senderId: socket.id });
-            } else {
-                playSound('chat');
-                const chatContainer = document.getElementById('chat-messages-target');
-                const rowNode = document.createElement('div'); rowNode.className = "chat-row row-self";
-                rowNode.innerHTML = `<div class="chat-msg-item"><strong>${playerData.name}</strong>${val}</div>`;
-                chatContainer.appendChild(rowNode); chatContainer.scrollTop = chatContainer.scrollHeight;
-                triggerTrackBubbleAnim("bubble-player", val);
-            }
-            inp.value = "";
+            const box = document.getElementById('chat-input-box');
+            const txt = box.value.trim();
+            if(!txt) return;
+            socket.emit('sendChatMessage', { roomId: currentOnlineRoomId, sender: myName, text: txt, senderId: socket.id });
+            box.value = "";
         }
 
-        function abortAndResetMatchAction() {
-            if(!isServerHost) return;
-            if(isOnlineMode) socket.emit('abortMatchMidWay', { roomId: currentOnlineRoomId });
-            else {
-                clearMatchStateData(); renderLanesLocal();
-                document.getElementById('words-wrapper').innerText = "Match di-abort oleh Host.";
-                document.getElementById('start-btn').style.display = "inline-block";
-                document.getElementById('mid-game-reset-btn').style.display = "none";
-                unlockAndOpenChatUI();
-            }
-        }
-
-        function requestReplayAction() { if(isOnlineMode && isServerHost) socket.emit('requestReset', { roomId: currentOnlineRoomId }); }
-        function kickOnlinePlayerAction(targetId) { if(isOnlineMode && isServerHost) socket.emit('kickPlayerAction', { roomId: currentOnlineRoomId, targetId }); }
-
-        function clearMatchStateData() {
-            clearInterval(loopInterval); clearInterval(matchDurationTimeout);
-            gameActive = false; playerData.gameActiveRun = false; startTime = null; currentWordIndex = 0; totalKeystrokes = 0; correctKeystrokes = 0; currentActiveLineIndex = 0; finishedRacersData = [];
-            playerData.isFinished = false; playerData.currentWpm = 0; playerData.progressPercent = 0;
-            activeBots.forEach(b => { b.isFinished = false; b.currentWpm = 0; b.progressPercent = 0; });
-
-            const inp = document.getElementById('input-box'); inp.disabled = true; inp.value = ""; inp.className = ""; inp.placeholder = "Menunggu Balapan...";
-            document.getElementById('words-wrapper').style.transform = "translateY(0px)";
-            document.getElementById('live-timer-banner').style.display = 'none';
-            document.getElementById('view-scores-btn').style.display = 'none';
-            closeModalOnly(); updateLivePodiumUI();
-        }
+        socket.on('incomingChatMessage', (data) => {
+            const container = document.getElementById('chat-messages-target');
+            const row = document.createElement('div');
+            row.className = "chat-row " + (data.senderId === socket.id ? "row-self" : "row-other");
+            row.innerHTML = `<div class="chat-msg-item"><strong>${data.sender}</strong>${data.text}</div>`;
+            container.appendChild(row);
+            container.scrollTop = container.scrollHeight;
+        });
 
         function copyRoomShareLink() {
-            const dummy = document.createElement('input'); dummy.value = window.location.origin + "?room=" + currentOnlineRoomId;
-            document.body.appendChild(dummy); dummy.select(); document.execCommand('copy'); document.body.removeChild(dummy);
-            alert("Link Kamar Mabar berhasil disalin!");
+            if(!currentOnlineRoomId) return alert("Kamu belum masuk room online!");
+            const link = window.location.origin + "?room=" + currentOnlineRoomId;
+            navigator.clipboard.writeText(link).then(() => {
+                alert("Link Kamar Mabar disalin! Kirim ke temen lo biar mabar: " + link);
+            });
         }
-        function leaveRoomAction() { window.location.reload(); }
-        function openScoresModal() { document.getElementById('results-modal').classList.add('active'); }
-        function closeModalOnly() { document.getElementById('results-modal').classList.remove('active'); }
 
+        function leaveRoomAction() { window.location.reload(); }
+
+        let urlRoomCode = null;
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search); 
-            const rParam = urlParams.get('room');
-            if(rParam) {
-                urlRoomCode = rParam.toUpperCase();
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            if(roomParam) {
+                urlRoomCode = roomParam.toUpperCase();
                 document.getElementById('lobby-panel').style.display = 'none';
                 document.getElementById('sharelink-join-modal').classList.add('active');
             }
-        }
+        };
     </script>
 </body>
 </html>
