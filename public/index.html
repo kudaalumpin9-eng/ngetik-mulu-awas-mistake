@@ -497,8 +497,8 @@
                         <td>Tingkat Kesusahan Kata</td>
                         <td>
                             <select id="difficulty-select" onchange="broadcastSettings()">
-                                <option value="easy" selected>Mudah (Kata Pendek Standar)</option>
-                                <option value="hard">Sulit (Kata Panjang & Simbol)</option>
+                                <option value="easy" selected>10FastFingers Top 200 (Umum)</option>
+                                <option value="hard">Kosakata Kompleks & Simbol</option>
                             </select>
                         </td>
                     </tr>
@@ -507,10 +507,10 @@
                         <td>
                             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                                 <label class="checkbox-label">
-                                    <input type="checkbox" id="punctuation-toggle" checked onchange="broadcastSettings()"> Tanda Baca
+                                    <input type="checkbox" id="punctuation-toggle" onchange="broadcastSettings()"> Tanda Baca
                                 </label>
                                 <label class="checkbox-label">
-                                    <input type="checkbox" id="capitalize-toggle" checked onchange="broadcastSettings()"> Huruf Kapital
+                                    <input type="checkbox" id="capitalize-toggle" onchange="broadcastSettings()"> Huruf Kapital
                                 </label>
                             </div>
                         </td>
@@ -672,7 +672,7 @@
                 </thead>
                 <tbody id="leaderboard-rows-target"></tbody>
             </table>
-            <br><    br>
+            <br><br>
             <button class="btn btn-danger" onclick="closeModalOnly()">Tutup Klasemen</button>
         </div>
     </div>
@@ -710,7 +710,11 @@
         let finishedRacersData = [];
         let isChatMuted = false;
 
-        const easyWords = [ "bisa", "buku", "pintu", "rumah", "dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "saya", "kamu", "akan", "dapat", "yang", "dari", "pada", "ke", "ini", "itu", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "with", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan" ];
+        // KOSAKATA RESMI INDONESIA TOP 200 DARI 10FASTFINGERS
+        const easyWords = [
+            "dan", "yang", "ada", "untuk", "itu", "di", "ia", "dengan", "pada", "sebagai", "dari", "tidak", "bisa", "kamu", "ini", "dia", "adalah", "mereka", "akan", "tahun", "kita", "ke", "orang", "saya", "dalam", "bukan", "banyak", "atau", "saat", "secara", "karena", "dapat", "juga", "sudah", "hukum", "oleh", "telah", "bahwa", "hanya", "tetapi", "harus", "menjadi", "lebih", "dunia", "dulu", "pernah", "sangat", "hal", "mengapa", "semua", "bila", "kapan", "dimana", "bagaimana", "siapa", "hari", "waktu", "jalan", "baru", "lama", "satu", "dua", "tiga", "malam", "pagi", "siang", "makan", "minum", "tidur", "baik", "buruk", "besar", "kecil", "hidup", "mati", "kerja", "main", "lihat", "tahu", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "mulai", "selesai", "terus", "pasti", "mungkin", "boleh", "sama", "beda", "seperti", "jika", "kalau", "melainkan", "atas", "bawah", "depan", "belakang", "jauh", "dekat", "luar", "dalam", "antara", "terhadap", "tentang", "mengenai", "bagi", "kepada", "daripada", "melalui", "selama", "sebelum", "sesudah", "sejak", "hingga", "sampai", "kembali", "kemudian", "lalu", "sambil", "sedangkan", "maupun", "namun", "tetap", "bahkan", "yaitu", "yakni", "adapun", "walaupun", "meskipun", "supaya", "agar", "mari", "ayo", "wah", "oh", "ya", "tidak", "bukan", "jangan", "saja", "pun", "lah", "kah", "deh", "sih", "dong", "kok", "tuh", "nih", "loh", "negara", "pemerintah", "masyarakat", "bangsa", "rakyat", "warga", "kota", "desa", "rumah", "keluarga", "anak", "orangtua", "ayah", "ibu", "kakak", "adik", "suami", "istri", "pria", "wanita", "sekolah", "guru", "murid", "buku", "kerja", "kantor", "uang", "harga", "pasar", "toko", "barang", "baju", "makanan"
+        ];
+        
         const hardWords = [ "implementasi", "karakteristik", "sinkronisasi", "kontekstual", "infrastruktur", "kompleksitas", "fundamental", "konsekuensi", "asimetris", "metodologi", "transformasional", "restrukturisasi", "akuntabilitas", "profesionalisme", "standardisasi", "korelasional", "keanekaragaman", "pemberdayaan", "kesinambungan", "determinisme", "eksistensialisme", "epistemologi", "fenomenologi", "individualisme", "kapitalisme", "nasionalisme", "rasionalisme", "sekularisme", "spesialisasi", "objektivitas", "subjektivitas", "sistematisasi", "industrialisasi", "modernisasi", "globalisasi", "demokratisasi", "liberalisasi", "nasionalisasi", "privatisasi", "sentralisasi", "desentralisasi", "birokratisasi", "institusionalisasi", "intelektualisasi", "rasionalisasi", "sekularisasi", "spiritualisasi", "materialisasi", "komersialisasi", "digitalisasi", "otomatisasi" ];
         const punctuationMarks = [".", ",", "!", "?", ";"];
 
@@ -1092,7 +1096,6 @@
             }, 1000);
         }
 
-        /* --- MODIFIKASI UTAMA: RENDER KALIMAT MENJADI CHAR SPAN (MONKEYTYPE STYLE) --- */
         function renderWords() {
             const wrapper = document.getElementById('words-wrapper');
             wrapper.innerHTML = ""; 
@@ -1106,7 +1109,6 @@
                     span.classList.add('current');
                 }
                 
-                // Supaya spasi tetap dirender dengan benar di HTML
                 span.textContent = completeTargetSentence[i] === " " ? " " : completeTargetSentence[i];
                 wrapper.appendChild(span);
             }
@@ -1186,7 +1188,6 @@
             const elapsedMins = (new Date() - startTime) / 60000;
             if(elapsedMins <= 0) return;
             
-            // WPM dihitung real-time berdasarkan total indeks huruf yang sudah benar dilewati dibagi 5
             playerData.currentWpm = Math.floor((playerData.currentCharIndex / 5) / elapsedMins);
             
             if(document.getElementById('game-mode').value === 'words') {
@@ -1197,7 +1198,6 @@
             }
         }
 
-        /* --- MODIFIKASI EVENT LISTENER INPUT: VALIDASI REAL-TIME PER HURUF --- */
         const boxInputNode = document.getElementById('input-box');
         boxInputNode.addEventListener('input', () => {
             if(!gameActive || playerData.isFinished || playerData.isSpectator) return;
@@ -1205,17 +1205,14 @@
             const typedValue = boxInputNode.value;
             const totalLength = completeTargetSentence.length;
             
-            // Loop semua span karakter teks target untuk update status warna secara real-time
             for (let i = 0; i < totalLength; i++) {
                 const charSpan = document.getElementById(`char-${i}`);
                 if (!charSpan) continue;
                 
                 if (i < typedValue.length) {
-                    // Karakter sudah diketik, bandingkan kecocokannya
                     if (typedValue[i] === completeTargetSentence[i]) {
                         charSpan.className = 'char correct';
                     } else {
-                        // Jika ada ketikan salah, picu efek getar sesekali (hanya di huruf terakhir yang salah dimasukkan)
                         if (i === typedValue.length - 1 && !charSpan.classList.contains('wrong')) {
                             triggerScreenShakeEffect();
                             playSound('error');
@@ -1223,22 +1220,18 @@
                         charSpan.className = 'char wrong';
                     }
                 } else if (i === typedValue.length) {
-                    // Karakter yang saat ini sedang aktif (posisi kursor berada)
                     charSpan.className = 'char current';
-                    playerData.currentCharIndex = i; // Simpan progress index aktif
+                    playerData.currentCharIndex = i; 
                 } else {
-                    // Karakter masa depan yang belum diketik
                     charSpan.className = 'char';
                 }
             }
             
-            // Jika input box kosong, kembalikan kursor aktif ke huruf pertama
             if (typedValue.length === 0) {
                 const firstSpan = document.getElementById('char-0');
                 if (firstSpan) firstSpan.className = 'char current';
                 playerData.currentCharIndex = 0;
             } else if (typedValue.length >= totalLength && typedValue === completeTargetSentence) {
-                // KONDISI FINISH: Pengguna berhasil mengetik seluruh kalimat dengan sempurna
                 playerData.currentCharIndex = totalLength;
                 playerData.isFinished = true;
                 playerData.progressPercent = 100;
@@ -1257,7 +1250,6 @@
                 }
             }
             
-            // Perbarui data statistik lokal (WPM & Progress lintasan)
             calculateLiveStatsWpmProgress();
             if (!isOnlineMode) renderLanesLocal();
         });
@@ -1325,7 +1317,6 @@
                 
                 const elapsedSecs = (new Date() - startTime) / 1000;
                 if(document.getElementById('game-mode').value === 'words') {
-                    // Simulasi pengetikan karakter per detik oleh bot
                     const totalCharsTarget = totalCharsInSentence;
                     const charsTyped = (bot.currentWpm * 5) * (elapsedSecs / 60);
                     bot.progressPercent = Math.min(100, (charsTyped / totalCharsTarget) * 100);
