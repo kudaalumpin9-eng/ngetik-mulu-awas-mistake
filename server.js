@@ -14,6 +14,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const raceRooms = {};
 
 io.on('connection', (socket) => {
+    console.log(`⚡ Racer Terhubung: ${socket.id}`);
+
     socket.on('updateStatus', ({ roomId, status }) => {
         const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
@@ -24,8 +26,8 @@ io.on('connection', (socket) => {
 
     socket.on('requestReset', ({ roomId }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
-            room.results = [];
+        if (room) {
+            // Hasil balapan disimpan (tidak dikosongkan ke []) agar bisa melihat hasil sebelumnya
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
@@ -34,14 +36,12 @@ io.on('connection', (socket) => {
             });
             io.to(roomId).emit('performReset'); 
             io.to(roomId).emit('roomData', room); 
-            io.to(roomId).emit('receiveFinalData', []); 
         }
     });
 
     socket.on('abortMatchMidWay', ({ roomId }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
-            room.results = [];
+        if (room) {
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
@@ -53,8 +53,6 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('roomData', room);
         }
     });
-
-    console.log(`⚡ Racer Terhubung: ${socket.id}`);
 
     socket.on('createRoom', ({ playerName }) => {
         const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -81,6 +79,7 @@ io.on('connection', (socket) => {
         socket.emit('settingsUpdated', room.settings);
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
+        socket.emit('receiveFinalData', room.results);
     });
 
     socket.on('toggleReady', ({ roomId, isReady }) => {
@@ -102,18 +101,28 @@ io.on('connection', (socket) => {
 
     socket.on('kickPlayerAction', ({ roomId, targetId }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
+        if (room) {
             if (room.players[targetId]) {
                 delete room.players[targetId];
-                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sikit balap oleh Host!");
+                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sirkuit balap!");
                 io.to(roomId).emit('roomData', room);
             }
         }
     });
 
+    // Fitur Developer: Paksa Ganti Host Ruangan
+    socket.on('devChangeHost', ({ roomId, newHostId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[newHostId]) {
+            room.hostId = newHostId;
+            io.to(roomId).emit('hostChanged', newHostId);
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
     socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
+        if (room) {
             room.isTableOpen = isOpen; 
             socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); 
         }
@@ -121,7 +130,7 @@ io.on('connection', (socket) => {
 
     socket.on('updateSettingsServer', ({ roomId, ...settings }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
+        if (room) {
             room.settings = settings;
             socket.to(roomId).emit('settingsUpdated', settings);
         }
@@ -137,8 +146,7 @@ io.on('connection', (socket) => {
 
     socket.on('triggerCountdownServer', ({ roomId, wordsList }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
-            
+        if (room) {
             const unreadyPlayers = [];
             Object.keys(room.players).forEach(pId => {
                 if (pId !== room.hostId && !room.players[pId].isReady && !room.players[pId].isSpectator) {
@@ -150,22 +158,19 @@ io.on('connection', (socket) => {
                 return io.to(roomId).emit('gagalMulai', { unreadyNames: unreadyPlayers });
             }
 
-            room.results = [];
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
             });
             io.to(roomId).emit('gameCountdownStart', { wordsList });
-            io.to(roomId).emit('receiveFinalData', []);
         }
     });
 
     socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
         const room = raceRooms[roomId];
         if (room) {
-            room.results = room.results.filter(r => r.name !== name);
-            room.results.push({ name, wpm, isPlayer, emoji });
+            room.results.push({ name, wpm, isPlayer, emoji, timestamp: new Date().toLocaleTimeString() });
             if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
             room.results.sort((a, b) => b.wpm - a.wpm);
             io.to(roomId).emit('receiveFinalData', room.results); 
@@ -192,8 +197,17 @@ io.on('connection', (socket) => {
             const room = raceRooms[roomId];
             if (room && room.players[socket.id]) {
                 delete room.players[socket.id];
-                if (Object.keys(room.players).length === 0) delete raceRooms[roomId];
-                else io.to(roomId).emit('roomData', room);
+                if (Object.keys(room.players).length === 0) {
+                    delete raceRooms[roomId];
+                } else {
+                    // Jika yang keluar adalah Host, serahkan host ke player berikutnya
+                    if (room.hostId === socket.id) {
+                        const nextHostId = Object.keys(room.players)[0];
+                        room.hostId = nextHostId;
+                        io.to(roomId).emit('hostChanged', nextHostId);
+                    }
+                    io.to(roomId).emit('roomData', room);
+                }
             }
         });
     });
