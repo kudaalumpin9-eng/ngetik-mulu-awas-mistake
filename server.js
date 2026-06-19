@@ -11,7 +11,7 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Fallback routing untuk single page application
+// Fallback routing ke index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -19,20 +19,20 @@ app.get('*', (req, res) => {
 const raceRooms = {};
 
 io.on('connection', (socket) => {
-    console.log('User terhubung:', socket.id);
+    console.log('User connected:', socket.id);
 
     // 1. Join Room Handler
     socket.on('joinRoom', ({ roomId, name, emoji, isSpectator, mode }) => {
         const rId = roomId.toUpperCase();
         socket.join(rId);
 
-        // Jika room belum ada, buat baru
+        // Jika room belum ada di memory server, buat strukturnya
         if (!raceRooms[rId]) {
             raceRooms[rId] = {
                 id: rId,
                 hostId: socket.id,
                 players: {},
-                results: [], // Hasil balapan persisten (tidak dihilangkan saat reset)
+                results: [], // Tempat penyimpanan hasil balapan persisten
                 activeRaceResults: null,
                 gameStarted: false,
                 gameMode: mode || 'race', // 'race' atau 'time'
@@ -42,12 +42,12 @@ io.on('connection', (socket) => {
 
         const room = raceRooms[rId];
         
-        // Proteksi jika host kosong, serahkan ke yang baru masuk
+        // Proteksi jika host kosong, otomatis jadikan user ini sebagai host
         if (!room.hostId || !room.players[room.hostId]) {
             room.hostId = socket.id;
         }
 
-        // Daftarkan data player
+        // Daftarkan data profile player ke objek room
         room.players[socket.id] = {
             id: socket.id,
             name: name || 'Anonim',
@@ -61,18 +61,18 @@ io.on('connection', (socket) => {
             isDeveloper: false
         };
 
-        // Kirim data terupdate ke semua orang di room
+        // Emit data room ke seluruh client di kamar tersebut
         io.to(rId).emit('roomData', room);
         
-        // Kirim papan skor terakhir agar penonton/pemain baru bisa langsung melihat hasil sebelumnya
-        if (room.activeRaceResults) {
+        // Kirim papan skor terakhir agar user yang baru masuk tetap bisa melihat hasil sebelumnya
+        if (room.activeRaceResults && room.activeRaceResults.length > 0) {
             socket.emit('receiveFinalData', room.activeRaceResults);
-        } else if (room.results.length > 0) {
+        } else if (room.results && room.results.length > 0) {
             socket.emit('receiveFinalData', room.results);
         }
     });
 
-    // 2. Update Status Online/Offline
+    // 2. Update Status Online / Offline
     socket.on('updateStatus', ({ roomId, status }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
@@ -82,12 +82,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 3. Request Reset (Hasil pertandingan sebelumnya TIDAK dihilangkan)
+    // 3. Request Reset Lintasan (Hasil pertandingan sebelumnya dipertahankan!)
     socket.on('requestReset', ({ roomId }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
         
-        // Hanya boleh dipicu oleh Host atau akun berstatus Developer
+        // Validasi: Hanya bisa dipicu oleh Host resmi atau akun berstatus Developer
         if (room && (room.hostId === socket.id || room.players[socket.id]?.isDeveloper)) {
             room.gameStarted = false;
             
@@ -98,8 +98,8 @@ io.on('connection', (socket) => {
                 if (!room.players[pId].isSpectator) room.players[pId].isReady = false; 
             });
 
-            // Catatan: room.results & room.activeRaceResults sengaja TIDAK dihapus di sini
-            // agar pemain tetap bisa melihat hasil balapan terakhir sampai balapan berikutnya selesai.
+            // Sesuai request: room.results dan room.activeRaceResults sengaja TIDAK dihapus
+            // Supaya tampilan hasil balapan sebelumnya tidak hilang sampai balapan baru selesai.
             io.to(rId).emit('roomReset', room);
             io.to(rId).emit('roomData', room);
         }
@@ -115,14 +115,14 @@ io.on('connection', (socket) => {
             if (text) room.text = text;
             if (mode) room.gameMode = mode;
             
-            // Siapkan slot data balapan baru (skor lama masih tayang sampai ada yang finish baru)
+            // Siapkan penampung hasil balapan yang baru
             room.activeRaceResults = []; 
             
             io.to(rId).emit('raceStarted', { text: room.text, gameMode: room.gameMode });
         }
     });
 
-    // 5. Submit Skor Akhir Balapan (Mengisi Leaderboard Persisten)
+    // 5. Submit Hasil Skor Akhir Balapan
     socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
@@ -131,23 +131,24 @@ io.on('connection', (socket) => {
                 room.activeRaceResults = [];
             }
             
-            // Filter agar tidak ada nama duplikat dalam list skor
+            // Bersihkan data lama dengan nama yang sama untuk mencegah duplikasi baris
             room.activeRaceResults = room.activeRaceResults.filter(r => r.name !== name);
             room.activeRaceResults.push({ name, wpm, isPlayer, emoji });
             room.activeRaceResults.sort((a, b) => b.wpm - a.wpm);
             
-            // Timpa data hasil utama agar tersimpan persisten secara permanen di server lobi
+            // Simpan ke database lobi utama secara persisten
             room.results = [...room.activeRaceResults];
 
             if (isPlayer && room.players[socket.id]) {
                 room.players[socket.id].isFinished = true;
             }
-            // Kirim papan skor terupdate ke seluruh client
+            
+            // Broadcast hasil terupdate ke semua user
             io.to(rId).emit('receiveFinalData', room.results); 
         }
     });
 
-    // 6. Live Progress Tracking & Realtime WPM Update
+    // 6. Live Progress Tracking & WPM Realtime
     socket.on('updateProgress', ({ roomId, progressPercent, currentWpm }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
@@ -158,7 +159,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 7. Sistem Chatting Kamar
+    // 7. Sistem Chatting Kamar Mabar
     socket.on('sendChatMessage', ({ roomId, sender, text, senderId }) => {
         const rId = roomId.toUpperCase();
         if (raceRooms[rId]) {
@@ -166,7 +167,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 8. Otoritas Otentikasi Mode Developer
+    // 8. Otoritas Otentikasi Mode Developer Pencipta
     socket.on('authDeveloper', ({ roomId, username }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
@@ -178,7 +179,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 9. Aksi Developer: Kick Player / Kick Host
+    // 9. Aksi Khusus Developer: Kick Player / Kick Host
     socket.on('devKickPlayer', ({ roomId, targetPlayerId }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
@@ -187,7 +188,7 @@ io.on('connection', (socket) => {
                 io.to(targetPlayerId).emit('kickedFromRoom');
                 delete room.players[targetPlayerId];
                 
-                // Jika developer men-kick host, jalankan serah terima host otomatis saat itu juga
+                // Jika yang dikick kebetulan adalah host, pindahkan peran host secara instan
                 if (room.hostId === targetPlayerId) {
                     const remainingIds = Object.keys(room.players);
                     room.hostId = remainingIds.length > 0 ? remainingIds[0] : null;
@@ -197,7 +198,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 10. Aksi Developer: Ganti / Transfer Jabatan Host Paksa
+    // 10. Aksi Khusus Developer: Ganti / Transfer Jabatan Host
     socket.on('devTransferHost', ({ roomId, newHostId }) => {
         const rId = roomId.toUpperCase();
         const room = raceRooms[rId];
@@ -209,26 +210,26 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 11. Handle Disconnect & Serah Terima Host Otomatis ke Player Berikutnya
+    // 11. Handle User Disconnect & Serah Terima Host Otomatis
     socket.on('disconnect', () => {
-        console.log('User terputus:', socket.id);
+        console.log('User disconnected:', socket.id);
         Object.keys(raceRooms).forEach((rId) => {
             const room = raceRooms[rId];
             if (room && room.players[socket.id]) {
                 delete room.players[socket.id];
                 
-                // JIKA HOST KELUAR -> Serahkan jabatan host secara otomatis pada player berikutnya
+                // JIKA HOST KELUAR -> Serahkan langsung secara otomatis ke player berikutnya
                 if (room.hostId === socket.id) {
                     const nextPlayers = Object.keys(room.players);
                     if (nextPlayers.length > 0) {
                         room.hostId = nextPlayers[0];
-                        console.log(`Host keluar! Jabatan dipindahkan di Room ${rId} ke Player ID: ${room.hostId}`);
+                        console.log(`Host lama keluar. Host Kamar ${rId} dialihkan otomatis ke: ${room.hostId}`);
                     } else {
                         room.hostId = null;
                     }
                 }
                 
-                // Bersihkan kamar jika benar-benar kosong total
+                // Jika kamar sudah kosong total tanpa sisa, bersihkan memory room
                 const remainingCount = Object.keys(room.players).length;
                 if (remainingCount === 0) {
                     delete raceRooms[rId];
@@ -242,5 +243,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server Cyber Typing berjalan lancar di port ${PORT}`);
+    console.log(`Server Cyber Typing v10 berjalan aktif di port ${PORT}`);
 });
