@@ -1743,6 +1743,7 @@
             gameActive = false; playerData.gameActiveRun = false; startTime = null; currentWordIndex = 0; totalKeystrokes = 0; correctKeystrokes = 0; currentActiveLineIndex = 0;
             playerData.isFinished = false; playerData.currentWpm = 0; playerData.progressPercent = 0;
             activeBots.forEach(b => { b.isFinished = false; b.currentWpm = 0; b.progressPercent = 0; });
+            finishedRacersData = [];
 
             const inp = document.getElementById('input-box'); 
             inp.disabled = true; inp.value = ""; inp.className = ""; 
