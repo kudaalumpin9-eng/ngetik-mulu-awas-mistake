@@ -11,237 +11,192 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Fallback routing ke index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 const raceRooms = {};
 
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-
-    // 1. Join Room Handler
-    socket.on('joinRoom', ({ roomId, name, emoji, isSpectator, mode }) => {
-        const rId = roomId.toUpperCase();
-        socket.join(rId);
-
-        // Jika room belum ada di memory server, buat strukturnya
-        if (!raceRooms[rId]) {
-            raceRooms[rId] = {
-                id: rId,
-                hostId: socket.id,
-                players: {},
-                results: [], // Tempat penyimpanan hasil balapan persisten
-                activeRaceResults: null,
-                gameStarted: false,
-                gameMode: mode || 'race', // 'race' atau 'time'
-                text: "Teknologi masa depan berkembang sangat cepat membawa perubahan besar dalam kehidupan digital siber modern."
-            };
-        }
-
-        const room = raceRooms[rId];
-        
-        // Proteksi jika host kosong, otomatis jadikan user ini sebagai host
-        if (!room.hostId || !room.players[room.hostId]) {
-            room.hostId = socket.id;
-        }
-
-        // Daftarkan data profile player ke objek room
-        room.players[socket.id] = {
-            id: socket.id,
-            name: name || 'Anonim',
-            emoji: emoji || '🚗',
-            isSpectator: !!isSpectator,
-            isOnline: true,
-            isReady: false,
-            isFinished: false,
-            progressPercent: 0,
-            currentWpm: 0,
-            isDeveloper: false
-        };
-
-        // Emit data room ke seluruh client di kamar tersebut
-        io.to(rId).emit('roomData', room);
-        
-        // Kirim papan skor terakhir agar user yang baru masuk tetap bisa melihat hasil sebelumnya
-        if (room.activeRaceResults && room.activeRaceResults.length > 0) {
-            socket.emit('receiveFinalData', room.activeRaceResults);
-        } else if (room.results && room.results.length > 0) {
-            socket.emit('receiveFinalData', room.results);
-        }
-    });
-
-    // 2. Update Status Online / Offline
     socket.on('updateStatus', ({ roomId, status }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
+        const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
             room.players[socket.id].isOnline = status;
-            io.to(rId).emit('roomData', room);
+            io.to(roomId).emit('roomData', room);
         }
     });
 
-    // 3. Request Reset Lintasan (Hasil pertandingan sebelumnya dipertahankan!)
     socket.on('requestReset', ({ roomId }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
-        
-        // Validasi: Hanya bisa dipicu oleh Host resmi atau akun berstatus Developer
-        if (room && (room.hostId === socket.id || room.players[socket.id]?.isDeveloper)) {
-            room.gameStarted = false;
-            
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.results = [];
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
                 if (!room.players[pId].isSpectator) room.players[pId].isReady = false; 
             });
-
-            // Sesuai request: room.results dan room.activeRaceResults sengaja TIDAK dihapus
-            // Supaya tampilan hasil balapan sebelumnya tidak hilang sampai balapan baru selesai.
-            io.to(rId).emit('roomReset', room);
-            io.to(rId).emit('roomData', room);
+            io.to(roomId).emit('performReset'); 
+            io.to(roomId).emit('roomData', room); 
+            io.to(roomId).emit('receiveFinalData', []); 
         }
     });
 
-    // 4. Start Race Game
-    socket.on('startRace', ({ roomId, text, mode }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
+    socket.on('abortMatchMidWay', ({ roomId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.results = [];
+            Object.keys(room.players).forEach(pId => {
+                room.players[pId].currentWpm = 0;
+                room.players[pId].progressPercent = 0;
+                room.players[pId].isFinished = false;
+                if (!room.players[pId].isSpectator) room.players[pId].isReady = false; 
+            });
+            io.to(roomId).emit('forceResetMatch');
+            io.to(roomId).emit('performReset');
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    console.log(`⚡ Racer Terhubung: ${socket.id}`);
+
+    socket.on('createRoom', ({ playerName }) => {
+        const roomId = Math.random().toString(36).substring(2, 6).toUpperCase();
+        raceRooms[roomId] = {
+            id: roomId,
+            hostId: socket.id,
+            isTableOpen: true, 
+            settings: { gameMode: 'words', wordTarget: 25, timeSelect: '60', lineView: '2', difficulty: 'easy', punctuation: true },
+            players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: true, isSpectator: false } }, 
+            results: []
+        };
+        socket.join(roomId);
+        socket.emit('joinSuccess', { roomId, isHost: true });
+        io.to(roomId).emit('roomData', raceRooms[roomId]);
+    });
+
+    socket.on('joinRoom', ({ roomId, playerName }) => {
+        const room = raceRooms[roomId];
+        if (!room) return socket.emit('errorMsg', "❌ Kode Room tidak ditemukan, Bos!");
         
-        if (room && (room.hostId === socket.id || room.players[socket.id]?.isDeveloper)) {
-            room.gameStarted = true;
-            if (text) room.text = text;
-            if (mode) room.gameMode = mode;
-            
-            // Siapkan penampung hasil balapan yang baru
-            room.activeRaceResults = []; 
-            
-            io.to(rId).emit('raceStarted', { text: room.text, gameMode: room.gameMode });
+        room.players[socket.id] = { id: socket.id, name: playerName || "Guest_Racer", carEmoji: "🏎️", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: false, isSpectator: false }; 
+        socket.join(roomId);
+        socket.emit('joinSuccess', { roomId, isHost: false });
+        socket.emit('settingsUpdated', room.settings);
+        socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
+        io.to(roomId).emit('roomData', room);
+    });
+
+    socket.on('toggleReady', ({ roomId, isReady }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isReady = isReady;
+            io.to(roomId).emit('roomData', room);
         }
     });
 
-    // 5. Submit Hasil Skor Akhir Balapan
+    socket.on('toggleSpectate', ({ roomId, isSpectator }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isSpectator = isSpectator;
+            if (isSpectator) room.players[socket.id].isReady = false; 
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    socket.on('kickPlayerAction', ({ roomId, targetId }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            if (room.players[targetId]) {
+                delete room.players[targetId];
+                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sikit balap oleh Host!");
+                io.to(roomId).emit('roomData', room);
+            }
+        }
+    });
+
+    socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.isTableOpen = isOpen; 
+            socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); 
+        }
+    });
+
+    socket.on('updateSettingsServer', ({ roomId, ...settings }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            room.settings = settings;
+            socket.to(roomId).emit('settingsUpdated', settings);
+        }
+    });
+
+    socket.on('updateCar', ({ roomId, carEmoji }) => {
+        const room = raceRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].carEmoji = carEmoji;
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    socket.on('triggerCountdownServer', ({ roomId, wordsList }) => {
+        const room = raceRooms[roomId];
+        if (room && room.hostId === socket.id) {
+            
+            const unreadyPlayers = [];
+            Object.keys(room.players).forEach(pId => {
+                if (pId !== room.hostId && !room.players[pId].isReady && !room.players[pId].isSpectator) {
+                    unreadyPlayers.push(room.players[pId].name);
+                }
+            });
+
+            if (unreadyPlayers.length > 0) {
+                return io.to(roomId).emit('gagalMulai', { unreadyNames: unreadyPlayers });
+            }
+
+            room.results = [];
+            Object.keys(room.players).forEach(pId => {
+                room.players[pId].currentWpm = 0;
+                room.players[pId].progressPercent = 0;
+                room.players[pId].isFinished = false;
+            });
+            io.to(roomId).emit('gameCountdownStart', { wordsList });
+            io.to(roomId).emit('receiveFinalData', []);
+        }
+    });
+
     socket.on('submitFinalData', ({ roomId, name, wpm, isPlayer, emoji }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
+        const room = raceRooms[roomId];
         if (room) {
-            if (!room.activeRaceResults) {
-                room.activeRaceResults = [];
-            }
-            
-            // Bersihkan data lama dengan nama yang sama untuk mencegah duplikasi baris
-            room.activeRaceResults = room.activeRaceResults.filter(r => r.name !== name);
-            room.activeRaceResults.push({ name, wpm, isPlayer, emoji });
-            room.activeRaceResults.sort((a, b) => b.wpm - a.wpm);
-            
-            // Simpan ke database lobi utama secara persisten
-            room.results = [...room.activeRaceResults];
-
-            if (isPlayer && room.players[socket.id]) {
-                room.players[socket.id].isFinished = true;
-            }
-            
-            // Broadcast hasil terupdate ke semua user
-            io.to(rId).emit('receiveFinalData', room.results); 
+            room.results = room.results.filter(r => r.name !== name);
+            room.results.push({ name, wpm, isPlayer, emoji });
+            if (isPlayer && room.players[socket.id]) room.players[socket.id].isFinished = true;
+            room.results.sort((a, b) => b.wpm - a.wpm);
+            io.to(roomId).emit('receiveFinalData', room.results); 
         }
     });
 
-    // 6. Live Progress Tracking & WPM Realtime
     socket.on('updateProgress', ({ roomId, progressPercent, currentWpm }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
+        const room = raceRooms[roomId];
         if (room && room.players[socket.id]) {
             room.players[socket.id].progressPercent = progressPercent;
             room.players[socket.id].currentWpm = currentWpm;
-            io.to(rId).emit('roomData', room);
+            io.to(roomId).emit('roomData', room);
         }
     });
 
-    // 7. Sistem Chatting Kamar Mabar
     socket.on('sendChatMessage', ({ roomId, sender, text, senderId }) => {
-        const rId = roomId.toUpperCase();
-        if (raceRooms[rId]) {
-            io.to(rId).emit('incomingChatMessage', { sender, text, senderId });
+        if (raceRooms[roomId]) {
+            io.to(roomId).emit('incomingChatMessage', { sender, text, senderId });
         }
     });
 
-    // 8. Otoritas Otentikasi Mode Developer Pencipta
-    socket.on('authDeveloper', ({ roomId, username }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
-        if (room && room.players[socket.id]) {
-            room.players[socket.id].isDeveloper = true;
-            room.players[socket.id].name = `[DEV] ${username}`;
-            socket.emit('developerAuthed', { success: true });
-            io.to(rId).emit('roomData', room);
-        }
-    });
-
-    // 9. Aksi Khusus Developer: Kick Player / Kick Host
-    socket.on('devKickPlayer', ({ roomId, targetPlayerId }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
-        if (room && room.players[socket.id]?.isDeveloper) {
-            if (room.players[targetPlayerId]) {
-                io.to(targetPlayerId).emit('kickedFromRoom');
-                delete room.players[targetPlayerId];
-                
-                // Jika yang dikick kebetulan adalah host, pindahkan peran host secara instan
-                if (room.hostId === targetPlayerId) {
-                    const remainingIds = Object.keys(room.players);
-                    room.hostId = remainingIds.length > 0 ? remainingIds[0] : null;
-                }
-                io.to(rId).emit('roomData', room);
-            }
-        }
-    });
-
-    // 10. Aksi Khusus Developer: Ganti / Transfer Jabatan Host
-    socket.on('devTransferHost', ({ roomId, newHostId }) => {
-        const rId = roomId.toUpperCase();
-        const room = raceRooms[rId];
-        if (room && room.players[socket.id]?.isDeveloper) {
-            if (room.players[newHostId]) {
-                room.hostId = newHostId;
-                io.to(rId).emit('roomData', room);
-            }
-        }
-    });
-
-    // 11. Handle User Disconnect & Serah Terima Host Otomatis
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        Object.keys(raceRooms).forEach((rId) => {
-            const room = raceRooms[rId];
+        Object.keys(raceRooms).forEach((roomId) => {
+            const room = raceRooms[roomId];
             if (room && room.players[socket.id]) {
                 delete room.players[socket.id];
-                
-                // JIKA HOST KELUAR -> Serahkan langsung secara otomatis ke player berikutnya
-                if (room.hostId === socket.id) {
-                    const nextPlayers = Object.keys(room.players);
-                    if (nextPlayers.length > 0) {
-                        room.hostId = nextPlayers[0];
-                        console.log(`Host lama keluar. Host Kamar ${rId} dialihkan otomatis ke: ${room.hostId}`);
-                    } else {
-                        room.hostId = null;
-                    }
-                }
-                
-                // Jika kamar sudah kosong total tanpa sisa, bersihkan memory room
-                const remainingCount = Object.keys(room.players).length;
-                if (remainingCount === 0) {
-                    delete raceRooms[rId];
-                } else {
-                    io.to(rId).emit('roomData', room);
-                }
+                if (Object.keys(room.players).length === 0) delete raceRooms[roomId];
+                else io.to(roomId).emit('roomData', room);
             }
         });
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server Cyber Typing v10 berjalan aktif di port ${PORT}`);
-});
+server.listen(3000, () => console.log(`🚀 Sirkuit Balap di Port *:3000`));
