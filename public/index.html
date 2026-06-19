@@ -292,10 +292,10 @@
 
         /* --- DISPLAY KATA --- */
         .text-display { 
-            background-color: var(--bg-color); 
+            background-color: #eef4f8; 
             border-radius: 8px; 
             padding: 20px 15px; 
-            font-size: 1.4rem; 
+            font-size: 1.6rem; 
             line-height: 1.9; 
             margin-bottom: 5px; 
             text-align: left; 
@@ -303,6 +303,7 @@
             position: relative; 
             width: 100%;
             box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
         }
         .words-line-container { 
             display: flex; 
@@ -318,10 +319,12 @@
             width: 100%;
             text-align: justify; 
         }
-        .word { display: inline-block; padding: 2px 6px; margin: 2px 4px; border-radius: 4px; color: var(--text-muted); }
-        .word.current { color: var(--text-main); background-color: rgba(56, 189, 248, 0.25); box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
-        .word.current.error { background-color: rgba(248, 113, 113, 0.35); box-shadow: 0 0 8px var(--wrong-color); color: #fff; }
-        .word.completed { color: var(--correct-color); }
+        .word { display: inline-block; padding: 2px 6px; margin: 2px 4px; border-radius: 4px; color: #234567; }
+        .word.current { color: #000 !important; background-color: #a8d2e7 !important; box-shadow: none !important; }
+        .word.current.error { background-color: #a8d2e7 !important; box-shadow: none !important; color: #000 !important; }
+        .word.completed { color: #4ade80; }
+        .word .letter { display: inline-block; padding: 0; margin: 0; }
+        .word .letter.char-wrong { background-color: #ef4444 !important; color: #fff !important; border-radius: 2px; }
 
         .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; }
         .input-container { display: flex; gap: 12px; align-items: center; }
@@ -683,7 +686,7 @@
 
     <script>
         const easyWords = [
-            "bisa", "buku", "pintu", "rumah", "dulu", "pernah", "ada", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "kamu", "dia", "mereka", "kita", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "saya", "kamu", "akan", "dapat", "yang", "dari", "pada", "ke", "ini", "itu", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "with", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan"
+            "dan", "yang", "itu", "kau", "di", "dari", "untuk", "bisa", "saya", "kamu", "mereka", "dengan", "akan", "ke", "ada", "tidak", "ini", "dia", "kita", "bukan", "adalah", "ya", "bahwa", "juga", "pada", "seperti", "banyak", "tahu", "tak", "telah", "oleh", "atau", "dalam", "saat", "menjadi", "bila", "jika", "kalau", "tentang", "harus", "pernah", "karena", "mungkin", "saja", "kembali", "hanya", "mengapa", "apa", "siapa", "mana", "bagaimana", "sangat", "punya", "bawah", "atas", "depan", "belakang", "waktu", "hari", "malam", "pagi", "siang", "sore", "tahun", "bulan", "orang", "anak", "ibu", "ayah", "rumah", "jalan", "kerja", "baru", "lama", "besar", "kecil", "baik", "buruk", "masuk", "keluar", "melihat", "mendengar", "bicara", "datang", "pergi", "dulu", "sekarang", "nanti", "kemarin", "besok", "pikir", "hidup", "mati", "kasih", "terima", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sama", "lain", "paling", "lebih", "kurang", "sedikit", "semua", "setiap", "beberapa", "begitu", "begini", "tempat", "bawa", "ambil", "taruh", "buat", "makan", "minum", "tidur", "duduk", "berdiri", "cepat", "lambat", "tinggi", "rendah", "jauh", "dekat", "buka", "tutup", "cari", "temukan", "hilang", "menang", "kalah", "benar", "salah", "muda", "tua", "kaya", "miskin", "keras", "lembut", "bersih", "kotor", "panas", "dingin", "mahal", "murah", "senang", "sedih", "marah", "takut", "gembira", "tenang", "ramai", "sepi", "penting", "biasa", "luar", "dalam", "pintu", "jendela", "meja", "kursi", "buku", "pena"
         ];
         
         const hardWords = [
@@ -1215,9 +1218,13 @@
                 
                 wordsList.forEach((word, idx) => {
                     const span = document.createElement('span');
-                    span.className = idx === 0 ? "word current" : "word";
+                    span.className = idx === currentWordIndex ? "word current" : "word";
                     span.id = `word-${idx}`; 
-                    span.innerText = word;
+                    if (idx === currentWordIndex) {
+                        span.innerHTML = word.split('').map(char => `<span class="letter">${char}</span>`).join('');
+                    } else {
+                        span.innerText = word;
+                    }
                     currentLineDiv.appendChild(span);
                     currentLineIndices.push(idx);
                 });
@@ -1247,11 +1254,44 @@
                     const span = document.createElement('span');
                     span.className = idx === currentWordIndex ? "word current" : "word";
                     span.id = `word-${idx}`; 
-                    span.innerText = wordsList[idx];
+                    if (idx === currentWordIndex) {
+                        span.innerHTML = wordsList[idx].split('').map(char => `<span class="letter">${char}</span>`).join('');
+                    } else {
+                        span.innerText = wordsList[idx];
+                    }
                     lineDiv.appendChild(span);
                 });
                 wrapper.appendChild(lineDiv);
             }
+        }
+
+        /* --- SINKRONISASI HIGHLIGHT PER HURUF SECARA REALTIME --- */
+        function updateWordHighlighting(typedValue) {
+            const currentWordSpan = document.getElementById(`word-${currentWordIndex}`);
+            if (!currentWordSpan) return;
+
+            const targetWord = wordsList[currentWordIndex];
+            let html = "";
+            
+            for (let i = 0; i < targetWord.length; i++) {
+                const char = targetWord[i];
+                let className = "letter";
+                
+                if (i < typedValue.length) {
+                    if (typedValue[i] !== char) {
+                        className += " char-wrong";
+                    }
+                }
+                html += `<span class="${className}">${char}</span>`;
+            }
+            
+            if (typedValue.length > targetWord.length || !targetWord.startsWith(typedValue)) {
+                currentWordSpan.className = 'word current error';
+            } else {
+                currentWordSpan.className = 'word current';
+            }
+
+            currentWordSpan.innerHTML = html;
         }
 
         /* --- PERBAIKAN UTAMA: COCOK & SEGERA HAPUS BARIS LAMA, GENERATE BARIS BARU --- */
@@ -1287,7 +1327,11 @@
                         const span = document.createElement('span');
                         span.className = idx === currentWordIndex ? "word current" : "word";
                         span.id = `word-${idx}`; 
-                        span.innerText = wordsList[idx];
+                        if (idx === currentWordIndex) {
+                            span.innerHTML = wordsList[idx].split('').map(char => `<span class="letter">${char}</span>`).join('');
+                        } else {
+                            span.innerText = wordsList[idx];
+                        }
                         lineDiv.appendChild(span);
                     });
                     wrapper.appendChild(lineDiv);
@@ -1368,7 +1412,10 @@
             if(typedValue.endsWith(" ") || typedValue.endsWith("Enter")) {
                 if(typedValue.trim() === currentTargetWord) {
                     correctKeystrokes += (currentTargetWord.length + 1);
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word completed';
+                    if(document.getElementById(`word-${currentWordIndex}`)) {
+                        document.getElementById(`word-${currentWordIndex}`).className = 'word completed';
+                        document.getElementById(`word-${currentWordIndex}`).innerText = currentTargetWord;
+                    }
                     
                     currentWordIndex++; boxInputNode.value = ""; boxInputNode.className = "";
                     handleAutoLineScrollingLogic(); calculateLiveStatsWpmProgress();
@@ -1382,21 +1429,24 @@
                         if(isOnlineMode) socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
                         else registerLocalRacerFinished(playerData.name, playerData.currentWpm, playerData.carEmoji, false);
                     } else {
-                        if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current';
+                        const nextWordSpan = document.getElementById(`word-${currentWordIndex}`);
+                        if (nextWordSpan) {
+                            nextWordSpan.className = 'word current';
+                            nextWordSpan.innerHTML = wordsList[currentWordIndex].split('').map(char => `<span class="letter">${char}</span>`).join('');
+                        }
                     }
                 } else {
                     triggerScreenShakeEffect();
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current error';
+                    updateWordHighlighting(typedValue);
                     boxInputNode.className = "input-error";
                 }
             } else {
-                if (currentTargetWord.startsWith(typedValue)) {
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current';
-                    boxInputNode.className = "";
-                } else {
+                updateWordHighlighting(typedValue);
+                if (!currentTargetWord.startsWith(typedValue)) {
                     triggerScreenShakeEffect();
-                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current error';
                     boxInputNode.className = "input-error";
+                } else {
+                    boxInputNode.className = "";
                 }
             }
         });
