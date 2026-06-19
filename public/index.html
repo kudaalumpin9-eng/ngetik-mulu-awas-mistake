@@ -292,10 +292,10 @@
 
         /* --- DISPLAY KATA --- */
         .text-display { 
-            background-color: #eef4f8; 
+            background-color: var(--bg-color); 
             border-radius: 8px; 
             padding: 20px 15px; 
-            font-size: 1.6rem; 
+            font-size: 1.4rem; 
             line-height: 1.9; 
             margin-bottom: 5px; 
             text-align: left; 
@@ -303,7 +303,6 @@
             position: relative; 
             width: 100%;
             box-sizing: border-box;
-            font-family: 'Courier New', Courier, monospace;
         }
         .words-line-container { 
             display: flex; 
@@ -312,19 +311,19 @@
             width: 100%;
         }
         .word-line { 
-            display: block; 
+            display: flex;
+            flex-wrap: wrap;
             white-space: normal; 
             word-wrap: break-word; 
             min-height: 40px; 
             width: 100%;
-            text-align: justify; 
+            text-align: left; 
+            align-content: flex-start;
         }
-        .word { display: inline-block; padding: 2px 6px; margin: 2px 4px; border-radius: 4px; color: #234567; }
-        .word.current { color: #000 !important; background-color: #a8d2e7 !important; box-shadow: none !important; }
-        .word.current.error { background-color: #a8d2e7 !important; box-shadow: none !important; color: #000 !important; }
-        .word.completed { color: #4ade80; }
-        .word .letter { display: inline-block; padding: 0; margin: 0; }
-        .word .letter.char-wrong { background-color: #ef4444 !important; color: #fff !important; border-radius: 2px; }
+        .word { display: inline-block; padding: 2px 6px; margin: 2px 4px; border-radius: 4px; color: var(--text-muted); }
+        .word.current { color: var(--text-main); background-color: rgba(56, 189, 248, 0.25); box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+        .word.current.error { background-color: rgba(248, 113, 113, 0.35); box-shadow: 0 0 8px var(--wrong-color); color: #fff; }
+        .word.completed { color: var(--correct-color); }
 
         .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; }
         .input-container { display: flex; gap: 12px; align-items: center; }
@@ -685,12 +684,13 @@
     </div>
 
     <script>
+        // DATASET KATA SAMA PERSIS / IDENTIK DENGAN INDONESIAN 10FASTFINGERS
         const easyWords = [
-            "dan", "yang", "itu", "kau", "di", "dari", "untuk", "bisa", "saya", "kamu", "mereka", "dengan", "akan", "ke", "ada", "tidak", "ini", "dia", "kita", "bukan", "adalah", "ya", "bahwa", "juga", "pada", "seperti", "banyak", "tahu", "tak", "telah", "oleh", "atau", "dalam", "saat", "menjadi", "bila", "jika", "kalau", "tentang", "harus", "pernah", "karena", "mungkin", "saja", "kembali", "hanya", "mengapa", "apa", "siapa", "mana", "bagaimana", "sangat", "punya", "bawah", "atas", "depan", "belakang", "waktu", "hari", "malam", "pagi", "siang", "sore", "tahun", "bulan", "orang", "anak", "ibu", "ayah", "rumah", "jalan", "kerja", "baru", "lama", "besar", "kecil", "baik", "buruk", "masuk", "keluar", "melihat", "mendengar", "bicara", "datang", "pergi", "dulu", "sekarang", "nanti", "kemarin", "besok", "pikir", "hidup", "mati", "kasih", "terima", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sama", "lain", "paling", "lebih", "kurang", "sedikit", "semua", "setiap", "beberapa", "begitu", "begini", "tempat", "bawa", "ambil", "taruh", "buat", "makan", "minum", "tidur", "duduk", "berdiri", "cepat", "lambat", "tinggi", "rendah", "jauh", "dekat", "buka", "tutup", "cari", "temukan", "hilang", "menang", "kalah", "benar", "salah", "muda", "tua", "kaya", "miskin", "keras", "lembut", "bersih", "kotor", "panas", "dingin", "mahal", "murah", "senang", "sedih", "marah", "takut", "gembira", "tenang", "ramai", "sepi", "penting", "biasa", "luar", "dalam", "pintu", "jendela", "meja", "kursi", "buku", "pena"
+            "dan", "yang", "itu", "di", "dia", "ia", "pada", "untuk", "mereka", "kita", "kamu", "saya", "dari", "ada", "bisa", "buku", "rumah", "dulu", "pernah", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "akan", "dapat", "ini", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan", "dengan", "secara", "tentang", "sebagai", "bahwa", "menjadi", "oleh", "tersebut", "telah", "bagi", "serta", "tidak", "bukan", "bahkan", "hanya", "adalah", "bila", "artinya"
         ];
         
         const hardWords = [
-            "implementasi", "karakteristik", "sinkronisasi", "kontekstual", "infrastruktur", "kompleksitas", "fundamental", "konsekuensi", "asimetris", "metodologi", "transformasional", "restrukturisasi", "akuntabilitas", "profesionalisme", "standardisasi", "korelasional", "keanekaragaman", "pemberdayaan", "kesinambungan", "determinisme", "eksistensialisme", "epistemologi", "fenomenologi", "individualisme", "kapitalisme", "nasionalisme", "rasionalisme", "sekularisme", "spesialisasi", "meritokrasi", "birokratisasi", "industrialisasi", "modernisasi", "globalisasi", "digitalisasi", "otomatisasi", "komersialisasi", "institusional", "konstitusional", "multilateral", "kontradiktif", "kontemporer", "karakterisasi", "personifikasi", "intensifikasi", "diversifikasi", "kualifikasi", "sertifikasi", "identifikasi", "reorganisasi"
+            "dan", "yang", "itu", "di", "dia", "ia", "pada", "untuk", "mereka", "kita", "kamu", "saya", "dari", "ada", "bisa", "buku", "rumah", "dulu", "pernah", "cinta", "sayang", "namun", "kini", "tiada", "lagi", "perasaan", "kisah", "musnah", "sudah", "hancur", "hati", "sakiti", "waktu", "jalan", "balap", "fokus", "juara", "kunci", "sukses", "malam", "pagi", "siang", "tidur", "makan", "minum", "lari", "akan", "dapat", "ini", "atau", "juga", "baru", "lama", "hari", "luar", "dalam", "satu", "dua", "tiga", "banyak", "sedikit", "siapa", "mengapa", "kapan", "dimana", "bagaimana", "sangat", "benar", "salah", "baik", "buruk", "cepat", "lambat", "tinggi", "rendah", "luas", "sempit", "besar", "kecil", "muda", "tua", "hidup", "mati", "pikir", "kerja", "main", "lihat", "dengar", "tahu", "mau", "ingin", "minta", "ambil", "bawa", "kasih", "beri", "buka", "tutup", "naik", "turun", "keluar", "masuk", "kembali", "mulai", "selesai", "terus", "henti", "langsung", "pasti", "mungkin", "harus", "boleh", "sama", "beda", "seperti", "untuk", "sebab", "karena", "jika", "kalau", "tetapi", "melainkan", "dengan", "secara", "tentang", "sebagai", "bahwa", "menjadi", "oleh", "tersebut", "telah", "bagi", "serta", "tidak", "bukan", "bahkan", "hanya", "adalah", "bila", "artinya"
         ];
         
         const punctuationMarks = [".", ",", "!", "?", ""];
@@ -1200,7 +1200,7 @@
             }, 1000);
         }
 
-        /* --- PERBAIKAN UTAMA: SISTEM WINDOWING SCROLL BARIS KATA DINAMIS --- */
+        /* --- INTEGRASI DAN PENYEMPURNAAN SISTEM WINDOWING SCROLL BARIS KATA DINAMIS (10FASTFINGERS STYLE) --- */
         function renderWords() {
             const wrapper = document.getElementById('words-wrapper'); 
             wrapper.innerHTML = "";
@@ -1209,7 +1209,7 @@
             
             const lineView = document.getElementById('line-view-select').value;
             let currentLineIndices = [];
-            const maxWordsPerLine = lineView === '1' ? 6 : (lineView === '2' ? 9 : 11);
+            const maxWordsPerLine = 7; // Mengatur batas kata per baris agar pas optimal di kontainer tanpa terpotong setengah
 
             if (lineView === 'all') {
                 let currentLineDiv = document.createElement('div');
@@ -1218,13 +1218,9 @@
                 
                 wordsList.forEach((word, idx) => {
                     const span = document.createElement('span');
-                    span.className = idx === currentWordIndex ? "word current" : "word";
+                    span.className = idx === 0 ? "word current" : "word";
                     span.id = `word-${idx}`; 
-                    if (idx === currentWordIndex) {
-                        span.innerHTML = word.split('').map(char => `<span class="letter">${char}</span>`).join('');
-                    } else {
-                        span.innerText = word;
-                    }
+                    span.innerText = word;
                     currentLineDiv.appendChild(span);
                     currentLineIndices.push(idx);
                 });
@@ -1232,7 +1228,7 @@
                 return;
             }
 
-            // Memetakan kata ke kelompok baris virtual secara teratur
+            // Membagi rata seluruh index kata ke dalam kelompok baris virtual
             wordsList.forEach((word, idx) => {
                 currentLineIndices.push(idx);
                 if (currentLineIndices.length >= maxWordsPerLine || idx === wordsList.length - 1) {
@@ -1241,7 +1237,7 @@
                 }
             });
 
-            // Hanya me-render jumlah baris yang dipilih user ke dalam DOM (Sirkulasi Windowing)
+            // Hanya render baris yang diperbolehkan di dalam DOM secara real-time
             const allowedLines = parseInt(lineView);
             for (let i = 0; i < allowedLines; i++) {
                 if (!wordLineMappings[i]) break; 
@@ -1254,47 +1250,14 @@
                     const span = document.createElement('span');
                     span.className = idx === currentWordIndex ? "word current" : "word";
                     span.id = `word-${idx}`; 
-                    if (idx === currentWordIndex) {
-                        span.innerHTML = wordsList[idx].split('').map(char => `<span class="letter">${char}</span>`).join('');
-                    } else {
-                        span.innerText = wordsList[idx];
-                    }
+                    span.innerText = wordsList[idx];
                     lineDiv.appendChild(span);
                 });
                 wrapper.appendChild(lineDiv);
             }
         }
 
-        /* --- SINKRONISASI HIGHLIGHT PER HURUF SECARA REALTIME --- */
-        function updateWordHighlighting(typedValue) {
-            const currentWordSpan = document.getElementById(`word-${currentWordIndex}`);
-            if (!currentWordSpan) return;
-
-            const targetWord = wordsList[currentWordIndex];
-            let html = "";
-            
-            for (let i = 0; i < targetWord.length; i++) {
-                const char = targetWord[i];
-                let className = "letter";
-                
-                if (i < typedValue.length) {
-                    if (typedValue[i] !== char) {
-                        className += " char-wrong";
-                    }
-                }
-                html += `<span class="${className}">${char}</span>`;
-            }
-            
-            if (typedValue.length > targetWord.length || !targetWord.startsWith(typedValue)) {
-                currentWordSpan.className = 'word current error';
-            } else {
-                currentWordSpan.className = 'word current';
-            }
-
-            currentWordSpan.innerHTML = html;
-        }
-
-        /* --- PERBAIKAN UTAMA: COCOK & SEGERA HAPUS BARIS LAMA, GENERATE BARIS BARU --- */
+        /* --- PROSES HANCURKAN BARIS LAMA DAN MUNCULKAN BARIS BARU SAAT KATA TERAKHIR BARIS TERATAS SELESAI --- */
         function handleAutoLineScrollingLogic() {
             const lineView = document.getElementById('line-view-select').value;
             if (lineView === 'all') return;
@@ -1303,18 +1266,17 @@
             const linesInDom = wrapper.getElementsByClassName('word-line');
             if (linesInDom.length === 0) return;
 
-            // Membaca baris teratas yang ada di DOM saat ini
             const firstLineDom = linesInDom[0];
             const firstLineIdx = parseInt(firstLineDom.getAttribute('data-line-idx'));
             
             const targetLineIndices = wordLineMappings[firstLineIdx];
+            if (!targetLineIndices) return;
             const lastWordIdxInFirstLine = targetLineIndices[targetLineIndices.length - 1];
 
-            // Jika indeks ketikan saat ini melompat melewati kata terakhir baris atas, baris atas dihancurkan dari DOM
+            // Jika kata aktif sudah melompati batas kata terakhir di baris pertama DOM, lakukan pergantian baris instan
             if (currentWordIndex > lastWordIdxInFirstLine) {
                 firstLineDom.remove();
                 
-                // Cari data baris antrean selanjutnya yang belum dipasang untuk menyeimbangkan tinggi kontainer
                 const allowedLines = parseInt(lineView);
                 const nextLineToRenderIdx = firstLineIdx + allowedLines;
 
@@ -1327,11 +1289,7 @@
                         const span = document.createElement('span');
                         span.className = idx === currentWordIndex ? "word current" : "word";
                         span.id = `word-${idx}`; 
-                        if (idx === currentWordIndex) {
-                            span.innerHTML = wordsList[idx].split('').map(char => `<span class="letter">${char}</span>`).join('');
-                        } else {
-                            span.innerText = wordsList[idx];
-                        }
+                        span.innerText = wordsList[idx];
                         lineDiv.appendChild(span);
                     });
                     wrapper.appendChild(lineDiv);
@@ -1340,7 +1298,7 @@
         }
 
         function applyLineViewLimit() {
-            // Dikosongkan karena rotasi baris telah dikontrol ketat oleh manipulasi DOM langsung di fungsi atas.
+            // Sengaja dikosongkan karena rotasi baris dikontrol penuh oleh handleAutoLineScrollingLogic
         }
 
         function triggerActualGameLaunch() {
@@ -1412,10 +1370,7 @@
             if(typedValue.endsWith(" ") || typedValue.endsWith("Enter")) {
                 if(typedValue.trim() === currentTargetWord) {
                     correctKeystrokes += (currentTargetWord.length + 1);
-                    if(document.getElementById(`word-${currentWordIndex}`)) {
-                        document.getElementById(`word-${currentWordIndex}`).className = 'word completed';
-                        document.getElementById(`word-${currentWordIndex}`).innerText = currentTargetWord;
-                    }
+                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word completed';
                     
                     currentWordIndex++; boxInputNode.value = ""; boxInputNode.className = "";
                     handleAutoLineScrollingLogic(); calculateLiveStatsWpmProgress();
@@ -1429,24 +1384,21 @@
                         if(isOnlineMode) socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
                         else registerLocalRacerFinished(playerData.name, playerData.currentWpm, playerData.carEmoji, false);
                     } else {
-                        const nextWordSpan = document.getElementById(`word-${currentWordIndex}`);
-                        if (nextWordSpan) {
-                            nextWordSpan.className = 'word current';
-                            nextWordSpan.innerHTML = wordsList[currentWordIndex].split('').map(char => `<span class="letter">${char}</span>`).join('');
-                        }
+                        if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current';
                     }
                 } else {
                     triggerScreenShakeEffect();
-                    updateWordHighlighting(typedValue);
+                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current error';
                     boxInputNode.className = "input-error";
                 }
             } else {
-                updateWordHighlighting(typedValue);
-                if (!currentTargetWord.startsWith(typedValue)) {
-                    triggerScreenShakeEffect();
-                    boxInputNode.className = "input-error";
-                } else {
+                if (currentTargetWord.startsWith(typedValue)) {
+                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current';
                     boxInputNode.className = "";
+                } else {
+                    triggerScreenShakeEffect();
+                    if(document.getElementById(`word-${currentWordIndex}`)) document.getElementById(`word-${currentWordIndex}`).className = 'word current error';
+                    boxInputNode.className = "input-error";
                 }
             }
         });
