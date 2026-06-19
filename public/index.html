@@ -3,9 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Typing Race - Grand Championship V11</title>
+    <title>Cyber Typing Race - Grand Championship V10 Full Pro</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-color: #090d16;
+            --card-bg: #111827;
+            --accent-color: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.4);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --correct-color: #10b981;
+            --wrong-color: #ef4444;
+            --wrong-bg: rgba(239, 68, 68, 0.15);
+            --chat-self: #0b66c3;
+            --dev-color: #ff007f;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Top Bar Header Layout */
+        .top-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* Developer Button - Red Box Top-Left Inspired Placement */
+        .dev-btn-container {
+            display: inline-block;
+        }
+        .dev-access-btn {
+            background: linear-gradient(135deg, #ff0055 0%, #990033 100%);
+            color: #fff;
+            border: 2px solid #ff3377;
+            padding: 8px 16px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+            transition: all 0.3s ease;
+        }
+        .dev-access-btn:hover {
+            box-shadow: 0 0 18px #ff0055;
+            transform: scale(1.05);
+        }
+
+        .game-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #00f2ff, #00ff77, #ff007f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Status Components */
         .status-dot {
             height: 10px;
             width: 10px;
@@ -14,1195 +92,792 @@
             margin-right: 6px;
             vertical-align: middle;
         }
-        .online { background-color: #4ade80; box-shadow: 0 0 8px #4ade80; } 
-        .offline { background-color: #f87171; box-shadow: 0 0 8px #f87171; } 
+        .online { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
+        .offline { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
+
+        /* Main Workspace Grid using standard blocks */
+        .game-grid {
+            display: block;
+            width: 100%;
+        }
+
+        .main-panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            margin-bottom: 20px;
+        }
+
+        /* Words Container Styling - Cyber Neon & Premium Dark UI */
+        .words-container {
+            background: #070b12;
+            border: 2px solid #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            font-size: 1.35rem;
+            line-height: 2rem;
+            word-wrap: break-word;
+            margin-bottom: 20px;
+            position: relative;
+            letter-spacing: 0.5px;
+            user-select: none;
+            box-shadow: inset 0 4px 20px rgba(0,0,0,0.8);
+        }
         
-        :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(22, 30, 49, 0.85);
-            --accent-color: #00e5ff;
-            --text-main: #f1f5f9;
-            --text-muted: #64748b;
-            --correct-color: #00e676;
-            --wrong-color: #ff1744;
-            --chat-self: #00b0ff;
-            --neon-glow: 0 0 15px rgba(0, 229, 255, 0.4);
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: radial-gradient(circle at center, #111827 0%, #030712 100%);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
-        }
-
-        /* Tombol Developer Sesuai image_57a265.png di Kotak Merah Kiri Atas */
-        .dev-container-fixed {
+        .words-container::before {
+            content: 'SYSTEM CYBER INJECTOR TEXT';
             position: absolute;
-            top: 20px;
+            top: -10px;
             left: 20px;
-            z-index: 9999;
-        }
-        .btn-dev {
-            background-color: #ff1744;
-            color: #fff;
-            border: 2px solid #fff;
-            box-shadow: 0 0 10px rgba(255, 23, 68, 0.6);
+            background: #00f2ff;
+            color: #000;
+            font-size: 0.65rem;
             font-weight: bold;
-            padding: 8px 16px;
+            padding: 2px 8px;
             border-radius: 4px;
-            cursor: pointer;
-            font-family: monospace;
+            letter-spacing: 1px;
         }
 
-        h1 {
-            font-size: 2.5rem;
+        .word-token {
+            display: inline-block;
+            margin-right: 10px;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .word-token.current {
+            color: #ffffff;
+            background: rgba(0, 242, 255, 0.12);
+            border-bottom: 2px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 0 4px;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+        }
+        .word-token.correct {
+            color: var(--correct-color);
+            text-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+        }
+        .word-token.wrong {
+            color: var(--wrong-color);
+            background: var(--wrong-bg);
+            border-radius: 4px;
+            padding: 0 4px;
+        }
+
+        /* Controls Input and Info Fields */
+        .input-bar-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .typing-input {
+            flex: 1;
+            background: #070b12;
+            border: 2px solid #1e293b;
+            border-radius: 10px;
+            padding: 14px 20px;
+            font-size: 1.2rem;
+            color: white;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .typing-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .typing-input.error-glow {
+            border-color: var(--wrong-color) !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .live-stats-box {
+            background: #1e293b;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
             color: var(--accent-color);
-            text-shadow: var(--neon-glow);
-            margin-bottom: 10px;
-            letter-spacing: 2px;
+            min-width: 120px;
             text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .lobby-panel {
-            background-color: var(--card-bg);
-            border: 1px solid rgba(0, 229, 255, 0.2);
+        /* 3D Track Layout with Dynamic Layers */
+        .race-tracks-container {
+            background: #0b0f19;
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid #1e293b;
+            margin-bottom: 25px;
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.6);
+        }
+        
+        .track-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-track-lane {
+            position: relative;
+            height: 55px;
+            background: linear-gradient(180deg, #161e2e 0%, #111827 100%);
+            border-bottom: 2px dashed #334155;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            overflow: visible;
+        }
+        .player-track-lane:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .lane-info {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.4);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #e2e8f0;
+        }
+
+        /* Dynamic 3D shadow layers effect for cars */
+        .car-avatar-wrapper {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0%;
+            transition: left 0.25s cubic-bezier(0.1, 0.8, 0.2, 1);
+            z-index: 20;
+            font-size: 2rem;
+            display: inline-block;
+            will-change: left;
+            /* 3D Deep Layers */
+            filter: drop-shadow(2px 5px 4px rgba(0, 0, 0, 0.65)) 
+                    drop-shadow(5px 12px 10px rgba(0, 242, 255, 0.25));
+        }
+
+        /* Distinct Spectator Holding Area Box */
+        .spectator-holding-bay {
+            background: #111c30;
+            border: 2px dashed #1e3a8a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .spectator-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .spectator-car-box {
+            background: #0f172a;
+            border: 1px solid #2563eb;
+            border-radius: 8px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .spectator-car-box .spec-car {
+            font-size: 1.6rem;
+            animation: bounceFloating 2s infinite ease-in-out;
+        }
+
+        @keyframes bounceFloating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); filter: drop-shadow(0 6px 6px rgba(0,0,0,0.6)); }
+        }
+
+        /* Modals & Popups Setup */
+        .cyber-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 8, 15, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .cyber-modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #111827;
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 0 30px var(--accent-glow);
             border-radius: 16px;
             padding: 30px;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            backdrop-filter: blur(8px);
+            max-width: 460px;
             text-align: center;
-            margin-top: 40px;
         }
-
-        .lobby-input {
-            width: 85%;
-            padding: 12px;
-            margin: 10px 0;
-            background-color: #0f172a;
-            color: var(--text-main);
-            border: 1px solid rgba(0, 229, 255, 0.3);
+        .modal-box h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .modal-box input {
+            width: 100%;
+            background: #070b12;
+            border: 1px solid #334155;
             border-radius: 8px;
+            padding: 12px;
+            color: white;
             font-size: 1rem;
-            text-align: center;
+            margin-bottom: 15px;
             outline: none;
         }
-        .lobby-input:focus {
+        .modal-box input:focus {
             border-color: var(--accent-color);
-            box-shadow: var(--neon-glow);
         }
-
-        /* --- FLOATING CHAT BOX --- */
-        .chat-top-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 340px;
-            height: 420px;
-            background-color: #111827;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            z-index: 2000;
-            border: 2px solid var(--accent-color);
-            resize: both;
-            min-width: 280px;
-            min-height: 250px;
-            max-width: 600px;
-            max-height: 700px;
-        }
-        
-        .chat-top-container.chat-minimized {
-            height: 42px !important;
-            min-height: 42px !important;
-            width: 280px !important;
-            resize: none !important;
-            overflow: hidden !important; 
-        }
-
-        .chat-header {
-            background-color: #1e293b;
-            padding: 0 15px;
+        .action-submit-btn {
+            background: #00f2ff;
+            color: #000;
             font-weight: bold;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+        .action-submit-btn:hover {
+            background: #00cca3;
+        }
+
+        /* Leaderboard Persistent History View */
+        .persistent-results-board {
+            background: #111827;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .results-table th, .results-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #1e293b;
+        }
+        .results-table th {
             color: var(--accent-color);
-            border-bottom: 1px solid rgba(0,229,255,0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-            user-select: none;
-            height: 42px;
-        }
-        .chat-collapsible-body {
-            display: flex;
-            flex-direction: column;
-            height: calc(100% - 42px);
-            width: 100%;
-        }
-        .chat-messages {
-            padding: 12px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 0.85rem;
-            flex-grow: 1;
-            background: rgba(15,23,42,0.8);
-        }
-
-        .chat-row { display: flex; width: 100%; }
-        .chat-row.row-self { justify-content: flex-end; }
-        .chat-row.row-other { justify-content: flex-start; }
-
-        .chat-msg-item {
-            max-width: 75%;
-            padding: 8px 12px;
-            border-radius: 12px;
-            line-height: 1.4;
-            word-break: break-all;
-        }
-        .row-self .chat-msg-item { background-color: var(--chat-self); color: #fff; border-bottom-right-radius: 2px; }
-        .row-other .chat-msg-item { background-color: #334155; color: var(--text-main); border-bottom-left-radius: 2px; border-left: 3px solid var(--accent-color); }
-
-        /* --- ACCORDION PANELS --- */
-        .accordion-wrapper {
-            width: 100%;
-            max-width: 850px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
-            overflow: hidden;
-        }
-        .accordion-header {
-            padding: 15px 20px;
-            background-color: #151f32;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0, 229, 255, 0.1);
-        }
-        .accordion-title { font-weight: bold; font-size: 1.1rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
-        .accordion-content { max-height: 600px; transition: max-height 0.4s ease-out, padding 0.4s ease-out; padding: 20px; box-sizing: border-box; }
-        .accordion-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden; border: none !important; }
-
-        .settings-table { width: 100%; border-collapse: collapse; }
-        .settings-table td { padding: 8px; vertical-align: middle; }
-        .settings-table td:first-child { font-weight: 600; color: var(--text-main); width: 35%; }
-
-        select, input[type="number"] { padding: 8px 12px; background-color: #0f172a; color: var(--text-main); border: 1px solid rgba(0,229,255,0.2); border-radius: 6px; outline: none; }
-
-        /* --- COUNTDOWN LAMPU --- */
-        .countdown-box { 
-            display: none; 
-            background: rgba(3, 7, 18, 0.95); 
-            border: 2px solid var(--accent-color); 
-            border-radius: 12px; 
-            padding: 15px 25px; 
-            align-items: center; 
-            gap: 20px; 
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            box-shadow: var(--neon-glow);
-        }
-        .lights { display: flex; gap: 10px; }
-        .light { width: 30px; height: 30px; border-radius: 50%; background-color: #222; }
-        .light-red-active { background-color: #ff1744 !important; box-shadow: 0 0 15px #ff1744; }
-        .light-yellow-active { background-color: #ffea00 !important; box-shadow: 0 0 15px #ffea00; }
-        .light-green-active { background-color: #00e676 !important; box-shadow: 0 0 15px #00e676; }
-
-        .live-timer-banner { display: none; background: #111827; border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px 25px; color: #fff; font-size: 1.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 10px auto; width: fit-content; }
-
-        /* --- PODIUM --- */
-        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 250px; background-color: rgba(22, 30, 49, 0.5); border: 1px solid rgba(0, 229, 255, 0.1); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; }
-        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 150px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; }
-        .podium-slot .car-parked { font-size: 45px; transform: scaleX(-1); min-height: 55px; }
-        .podium-slot .meta-txt { font-size: 0.8rem; color: #fff; background: rgba(15, 23, 42, 0.9); padding: 5px 8px; border-radius: 6px; margin-bottom: 8px; width: 90%; box-sizing: border-box; }
-        .podium-slot.first { height: 160px; background: linear-gradient(135deg, #ffe082, #ffb300); }
-        .podium-slot.second { height: 125px; background: linear-gradient(135deg, #cfd8dc, #90a4ae); }
-        .podium-slot.third { height: 95px; background: linear-gradient(135deg, #bcaaa4, #8d6e63); }
-
-        /* --- LINTASAN PERSPEKTIF 3D RETRO --- */
-        .track-container { 
-            background-color: #1e293b; 
-            border-radius: 16px; 
-            padding: 20px; 
-            width: 100%; 
-            max-width: 850px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6); 
-            margin-bottom: 20px; 
-            box-sizing: border-box; 
-            /* 3D Isometric/Tilt Track */
-            transform: perspective(600px) rotateX(16deg);
-            border: 2px solid rgba(0, 229, 255, 0.15);
-        }
-        .track-lanes-wrapper { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-        .track-lane { height: 85px; border-bottom: 3px dashed rgba(255, 255, 255, 0.2); position: relative; display: flex; align-items: center; width: 100%; box-sizing: border-box; background: #111827; border-radius: 4px; }
-        .lane-info { position: absolute; left: 15px; top: 5px; font-size: 0.85rem; color: var(--text-muted); z-index: 10; display: flex; gap: 15px; align-items: center; }
-        .lane-info .wpm-counter { color: var(--accent-color); font-weight: bold; }
-        
-        .car-node-wrapper { position: absolute; left: 0; bottom: 8px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 80px; z-index: 5; }
-        
-        /* Efek Kedalaman Mobil (3D Shadow Layers) */
-        .car { 
-            font-size: 42px; 
-            transform: scaleX(-1); 
-            width: 100%; 
-            text-align: center; 
-            line-height: 1;
-            filter: drop-shadow(-2px 4px 3px rgba(0,0,0,0.65)) drop-shadow(-5px 12px 6px rgba(0,0,0,0.4));
-        }
-        
-        /* --- TEMPAT PARKIR MOBIL PENONTON --- */
-        .spectator-zone-container {
-            width: 100%;
-            max-width: 850px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px dashed rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-        .spectator-title {
             font-size: 0.85rem;
             text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
-        .spectator-parking-lot {
+
+        /* Configuration Room Area */
+        .room-setup-panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 20px;
+        }
+        .flex-row-wrap {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
-            min-height: 50px;
-            align-items: center;
-            background: #090d16;
-            padding: 10px;
+            margin-top: 15px;
+        }
+        .pill-btn {
+            background: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+            padding: 8px 16px;
             border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
         }
-        .spectator-car-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 12px;
-            color: #94a3b8;
-        }
-        .spectator-car-icon {
-            font-size: 32px;
-            animation: floatAnim 3s ease-in-out infinite alternate;
-        }
-        @keyframes floatAnim {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-3px); }
+        .pill-btn.active-host {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            border-color: #38bdf8;
         }
 
-        .car-bubble { 
-            position: absolute; 
-            bottom: 52px; 
-            background: #fff; 
-            color: #000; 
-            padding: 6px 12px; 
-            border-radius: 10px; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
-            opacity: 0; 
-            transition: opacity 0.3s, transform 0.3s;
-            width: 120px; 
-            text-align: center;
-            z-index: 99;
-        }
-        .car-bubble.active { opacity: 1; transform: scale(1) translateY(0); }
-
-        .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
-
-        /* --- SEKSI KATA (TEMA GELAP SIBER DI-UPGRADE) --- */
-        .text-display { 
-            background-color: #0b111e; 
-            border-radius: 12px; 
-            padding: 22px 28px; 
-            font-size: 1.6rem; 
-            line-height: 2.2; 
-            margin-bottom: 5px; 
-            text-align: left; 
-            overflow: hidden; 
-            position: relative; 
-            width: 100%;
-            box-sizing: border-box;
-            font-family: 'Consolas', 'Courier New', Courier, monospace;
-            border: 2px solid rgba(0, 229, 255, 0.2);
-            box-shadow: inset 0 4px 20px rgba(0,0,0,0.5);
-        }
-        .words-line-container { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-        .word-line { display: block; white-space: normal; word-wrap: break-word; min-height: 42px; width: 100%; text-align: left; }
-        
-        /* Highlight Estetik Sesuai Link Tampilan Kamar */
-        .word { display: inline-block; padding: 0px 6px; margin: 2px 4px; border-radius: 6px; color: #64748b; transition: all 0.1s ease; }
-        .word.current { color: #fff !important; background-color: rgba(0, 229, 255, 0.25) !important; box-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
-        .word.current.error { background-color: rgba(255, 23, 68, 0.3) !important; color: #ff8a80 !important; box-shadow: 0 0 10px rgba(255, 23, 68, 0.4); }
-        .word.completed { color: var(--correct-color); font-weight: 600; }
-        .word.completed-wrong { color: var(--wrong-color); text-decoration: line-through; opacity: 0.7; }
-        .word .letter { display: inline-block; }
-        .word .letter.char-wrong { background-color: #ff1744 !important; color: #fff !important; border-radius: 3px; }
-
-        .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; margin-top: 15px; }
-        .input-container { display: flex; gap: 12px; align-items: center; width: 100%; }
-        #input-box { flex: 1; padding: 15px 20px; font-size: 1.3rem; background-color: #0f172a; color: var(--text-main); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; outline: none; }
-        #input-box:focus { border-color: var(--accent-color); box-shadow: var(--neon-glow); }
-        #input-box.input-error { border-color: var(--wrong-color); background-color: rgba(255, 23, 68, 0.05); }
-
-        .btn { padding: 12px 20px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.1s; }
-        .btn:active { transform: scale(0.97); }
-        .btn-primary { background-color: var(--accent-color); color: #000; box-shadow: 0 0 10px rgba(0,229,255,0.2); }
-        .btn-success { background-color: var(--correct-color); color: #000; }
-        .btn-danger { background-color: var(--wrong-color); color: #fff; }
-        .btn-secondary { background-color: #334155; color: #fff; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 7, 18, 0.9); display: flex; justify-content: center; align-items: center; z-index: 8000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .tournament-results { background-color: #111827; padding: 30px; border-radius: 16px; width: 90%; max-width: 650px; text-align: center; border: 1px solid rgba(0,229,255,0.2); }
-        .leaderboard-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: left; }
-        .leaderboard-table th, .leaderboard-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-        /* --- SEKSI RIWAYAT/PERSISTENT HISTORY --- */
-        .persistent-history-box {
-            width: 100%;
-            max-width: 850px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-sizing: border-box;
-            border: 1px solid rgba(255,255,255,0.05);
-            margin-top: 20px;
-        }
-        .history-title {
-            font-size: 1.1rem;
-            color: var(--accent-color);
-            margin-top: 0;
+        /* Developer Control Dashboard Tooltip Menu */
+        .developer-admin-bar {
+            background: rgba(255, 0, 127, 0.1);
+            border: 1px solid var(--dev-color);
+            border-radius: 8px;
+            padding: 10px 15px;
             margin-bottom: 15px;
-            border-bottom: 1px solid rgba(0,229,255,0.2);
-            padding-bottom: 5px;
-            text-align: left;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
         }
-
-        .garage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; margin-top: 20px; max-height: 320px; overflow-y: auto; padding: 10px; }
-        .garage-item { background: #0f172a; border: 2px solid #334155; border-radius: 10px; padding: 15px 5px; cursor: pointer; text-align: center; }
-        .garage-item.selected-car { border-color: var(--correct-color); background: rgba(0, 230, 118, 0.1); }
-        .garage-item .car-img { font-size: 2.2rem; display: block; }
-        
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-2px, 0px) rotate(1deg); }
-            40% { transform: translate(1px, -1px) rotate(-1deg); }
-            60% { transform: translate(-1px, 2px) rotate(0deg); }
-            80% { transform: translate(2px, 1px) rotate(1deg); }
-            100% { transform: translate(1px, -2px) rotate(0deg); }
-        }
-        .shake-active { animation: shake 0.15s ease-in-out infinite; }
     </style>
 </head>
 <body>
 
-    <!-- Tombol Developer Sesuai Kotak Merah Kiri Atas -->
-    <div class="dev-container-fixed">
-        <button class="btn-dev" onclick="triggerDeveloperAccessPopup()">DEVELOPER</button>
-    </div>
-
-    <h1>🏎️ CYBER TYPING ARCADE RACER 🏎️</h1>
-
-    <!-- LOBBY SELECTION PANEL -->
-    <div class="lobby-panel" id="lobby-panel">
-        <h3 style="color: var(--accent-color); margin-top:0;">🏁 Masuk Sirkuit Balap 🏁</h3>
-        <input type="text" id="nickname-input" class="lobby-input" placeholder="Masukkan Nickname Lo..." value="RacerX" maxlength="12">
-        
-        <div style="margin: 15px 0; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
-            <button class="btn btn-success" style="width: 90%;" onclick="startSinglePlayerMode()">Main Solo + Bot Lawan 🤖</button>
+    <!-- Header containing the Creator/Developer Trigger Button -->
+    <div class="top-header-bar">
+        <div class="dev-btn-container">
+            <button class="dev-access-btn" onclick="triggerDeveloperModal()">DEVELOPER ACCESS</button>
         </div>
-
-        <div style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
-            <button class="btn btn-primary" style="width: 90%; margin-bottom: 10px;" onclick="createNewOnlineRoom()">Buat Kamar Mabar Baru 🌐</button>
-            <br>
-            <input type="text" id="roomcode-input" class="lobby-input" placeholder="KODE ROOM..." style="width: 50%; text-transform: uppercase;">
-            <button class="btn btn-secondary" onclick="joinOnlineRoom()">Join Kamar</button>
+        <div class="game-title">Cyber Typing Race v10 Pro</div>
+        <div>
+            Status Kamar: <span class="status-dot online"></span> <span id="room-code-badge">LOBI</span>
         </div>
     </div>
 
-    <!-- MAIN GAME ARENA -->
-    <div id="main-arena" style="display: none; width: 100%; max-width: 850px;">
-        
-        <!-- ROOM CONFIGURATION SETTINGS -->
-        <div class="accordion-wrapper">
-            <div class="accordion-header">
-                <div class="accordion-title">⚙️ Pengaturan Kamar Balap</div>
-                <button id="accordion-toggle-btn" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.85rem;" onclick="toggleAccordionAction()">Tutup Pengaturan ▲</button>
-            </div>
-            <div id="accordion-content-body" class="accordion-content">
-                <table class="settings-table">
-                    <tr>
-                        <td>Mode Game</td>
-                        <td>
-                            <select id="game-mode" onchange="toggleModeSettings(); broadcastSettings();">
-                                <option value="time">Mode 1: Berdasarkan Waktu (Bisa salah ketik & spasi tetap lanjut)</option>
-                                <option value="words" selected>Mode 2: Jumlah Kata (Kunci spasi jika salah ketik)</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr id="row-duration" style="display: none;">
-                        <td>Durasi Waktu</td>
-                        <td>
-                            <select id="time-select" onchange="broadcastSettings()">
-                                <option value="15">15 Detik</option>
-                                <option value="30">30 Detik</option>
-                                <option value="60" selected>1 Menit</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr id="row-word-count">
-                        <td>Target Jumlah Kata</td>
-                        <td>
-                            <input type="number" id="word-target-input" value="25" min="10" max="100" style="width: 80px;" oninput="broadcastSettings()">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Opsi Tampilan Baris</td>
-                        <td>
-                            <select id="line-view-select" onchange="broadcastSettings(); if(!gameActive && wordsList.length > 0) renderWords();">
-                                <option value="1">1 Baris</option>
-                                <option value="2" selected>2 Baris</option>
-                                <option value="all">Tampilkan Semua</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Tingkat Kesulitan</td>
-                        <td>
-                            <select id="difficulty-select" onchange="broadcastSettings()">
-                                <option value="easy" selected>Mudah</option>
-                                <option value="hard">Sulit</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Garasi Kamu</td>
-                        <td>
-                            <button class="btn btn-primary" style="padding: 6px 15px; font-size:0.85rem;" onclick="openGarageModal()">Pilih Mesin Kendaraan 🏎️</button>
-                            <span id="current-car-preview" style="font-size:1.4rem; margin-left:12px; vertical-align:middle;">🚗</span>
-                        </td>
-                    </tr>
-                    <tr id="bot-management-row" style="display: none;">
-                        <td>Bot Lawan (Solo)</td>
-                        <td>
-                            <button id="add-bot-btn" class="btn btn-secondary" onclick="addBot()" style="padding: 5px 12px; font-size: 0.85rem;">+ Tambah Bot</button>
-                            <button id="remove-bot-btn" class="btn btn-danger" onclick="removeBot()" style="padding: 5px 12px; font-size: 0.85rem;">Hapus Bot</button>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <!-- LIVE PODIUM WIDGET -->
-        <div class="live-podium-container" id="live-podium-widget">
-            <div class="podium-slot second">
-                <div id="podium-2-meta" class="meta-txt">Menunggu...</div>
-                <div id="podium-2-car" class="car-parked">🏁</div>
-                <div style="color: #000; margin-top: 5px; font-size: 0.9rem;">2nd Place</div>
-            </div>
-            <div class="podium-slot first">
-                <div id="podium-1-meta" class="meta-txt">Menunggu...</div>
-                <div id="podium-1-car" class="car-parked">🏁</div>
-                <div style="color: #000; margin-top: 5px; font-size: 0.9rem;">1st Place 👑</div>
-            </div>
-            <div class="podium-slot third">
-                <div id="podium-3-meta" class="meta-txt">Menunggu...</div>
-                <div id="podium-3-car" class="car-parked">🏁</div>
-                <div style="color: #000; margin-top: 5px; font-size: 0.9rem;">3rd Place</div>
-            </div>
-        </div>
-
-        <!-- TRACK Sirkuit Utama -->
-        <div class="track-container" id="race-track-card">
-            <div class="status-display">
-                <div>Status: <span id="role-text" style="color:var(--accent-color);">PLAYER</span></div>
-                <div id="room-id-badge" style="display:none;">ROOM CODE: <span id="room-code-txt" class="room-badge">-</span></div>
-                <div>
-                    <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
-                    <button class="btn btn-danger" style="padding: 6px 14px; font-size: 0.85rem;" onclick="leaveRoomAction()">Keluar Room 🏃</button>
-                </div>
-            </div>
-            <div class="track-lanes-wrapper" id="lanes-container"></div>
-        </div>
-
-        <!-- AREA PARKIR MOBIL PENONTON -->
-        <div class="spectator-zone-container">
-            <div class="spectator-title">👀 Spectator Parking Zone (Tempat Mobil Penonton)</div>
-            <div class="spectator-parking-lot" id="spectator-parking-lot">
-                <span style="color:#475569; font-size:0.85rem;" id="no-spec-msg">Tidak ada penonton di area parkir saat ini.</span>
-            </div>
-        </div>
-
-        <!-- FLOATING CHAT SIDEBAR -->
-        <div class="chat-top-container chat-minimized" id="chat-sidebar-panel">
-            <div class="chat-header" id="chat-draggable-header">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span>💬 Live Chat Sirkuit</span>
-                </div>
-                <button id="chat-toggle-btn" class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="toggleChatPanelAction()">Maximize</button>
-            </div>
-            <div id="chat-collapsible-wrapper" class="chat-collapsible-body" style="display: none;">
-                <div class="chat-messages" id="chat-messages-target"></div>
-                <div class="chat-input-wrapper" style="display:flex; padding:8px; background:#1f2937;">
-                    <input type="text" id="chat-input-box" style="flex:1; padding:6px; border-radius:4px; border:none;" placeholder="Ketik obrolan..." onkeydown="if(event.key === 'Enter') sendChatMessageAction()">
-                    <button class="btn btn-primary" style="padding:4px 10px; margin-left:5px;" onclick="sendChatMessageAction()">Kirim</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="live-timer-banner" id="live-timer-banner">⏱️ COUNTDOWN WAKTU: <span id="live-seconds-countdown">0</span>s</div>
-
-        <!-- JENDELA KATA/TEXT CONTAINER -->
-        <div class="track-container" style="padding: 12px; width: 100%; transform: none;">
-            <div class="text-display" id="words-window-box">
-                <div class="words-line-container" id="words-wrapper">Menunggu host memulai pertandingan...</div>
-            </div>
-        </div>
-
-        <!-- CONTROL INPUT ACTION AREA -->
-        <div class="action-area">
-            <div class="input-container">
-                <input type="text" id="input-box" disabled autocomplete="off" placeholder="Menunggu balapan dimulai...">
-                <button id="spectate-btn" class="btn btn-secondary" onclick="toggleSpectateAction()">👁️ Nonton Aja</button>
-                <button id="ready-toggle-btn" class="btn btn-danger" style="display: none;" onclick="toggleReadyStatusAction()">🔴 BELUM READY</button>
-                <button id="start-btn" class="btn btn-primary" onclick="startGameCountdown()">Mulai Balapan</button>
-                <button id="mid-game-reset-btn" class="btn btn-danger" onclick="abortAndResetMatchAction()" style="display: none;">Reset Match 🔄</button>
-            </div>
-        </div>
-
-        <!-- HASIL BALAPAN BERKELANJUTAN (PERSISTENT HISTORY CLASEMEN) -->
-        <div class="persistent-history-box">
-            <h4 class="history-title">📊 GLOBAL MATCH HISTORY (Hasil Balapan Sebelumnya)</h4>
-            <div style="max-height: 250px; overflow-y: auto;">
-                <table class="leaderboard-table" style="margin-top:0;">
-                    <thead>
-                        <tr style="color:var(--accent-color);">
-                            <th>Waktu Selesai</th>
-                            <th>Nama Racer</th>
-                            <th>Skor Kecepatan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="persistent-history-rows">
-                        <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada riwayat hasil balapan terdahulu.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- COUNTDOWN BOX WINDOW -->
-    <div class="countdown-box" id="countdown-box">
-        <div class="lights">
-            <div class="light" id="light-r"></div>
-            <div class="light" id="light-y"></div>
-            <div class="light" id="light-g"></div>
-        </div>
-        <div style="color: #fff; font-weight: bold;" id="countdown-text">Engine Check...</div>
-        <div style="color: #fff; font-weight: bold; font-family: monospace;" id="countdown-number">:10</div>
-    </div>
-
-    <!-- MODAL GARASI KENDARAAN -->
-    <div class="modal-overlay" id="garage-modal">
-        <div class="tournament-results">
-            <h2>🏎️ GARASI UTAMA KENDARAAN 🏎️</h2>
-            <div class="garage-grid">
-                <div class="garage-item selected-car" id="car-1" onclick="selectCarFromGarage('🚗', 'car-1')">
-                    <span class="car-img">🚗</span><span>Sedan</span>
-                </div>
-                <div class="garage-item" id="car-2" onclick="selectCarFromGarage('🏎️', 'car-2')">
-                    <span class="car-img">🏎️</span><span>F1 Racer</span>
-                </div>
-                <div class="garage-item" id="car-3" onclick="selectCarFromGarage('🚓', 'car-3')">
-                    <span class="car-img">🚓</span><span>Polisi</span>
-                </div>
-                <div class="garage-item" id="car-4" onclick="selectCarFromGarage('🚀', 'car-4')">
-                    <span class="car-img">🚀</span><span>Roket</span>
-                </div>
-                <div class="garage-item" id="car-5" onclick="selectCarFromGarage('🛸', 'car-5')">
-                    <span class="car-img">🛸</span><span>UFO</span>
-                </div>
-            </div>
-            <br><button class="btn btn-success" style="width:100%;" onclick="closeGarageModal()">Konfirmasi</button>
+    <!-- Admin Developer Controls Panel (Only visible upon successful credential input) -->
+    <div class="developer-admin-bar" id="dev-admin-dashboard">
+        <span style="color: var(--dev-color); font-weight: bold;">[DEV PANEL ACTIVE] Otoritas Pencipta Tertinggi</span>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="dev-target-id" placeholder="ID Player/Host" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ff007f; background: #000; color: #fff; font-size: 0.8rem; width: 120px;">
+            <button onclick="executeDevKick()" style="background: red; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Kick Host / Player</button>
+            <button onclick="executeDevTransferHost()" style="background: blue; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">Jadikan Host</button>
         </div>
     </div>
 
-    <!-- PANEL DEVELOPER POPUP -->
-    <div class="modal-overlay" id="dev-access-modal">
-        <div class="tournament-results" style="max-width:400px;">
-            <h3 style="color:#ff1744;">🛠️ CREATOR ACCESS GATEWAY 🛠️</h3>
-            <input type="text" id="dev-name-input" class="lobby-input" placeholder="Masukkan Nama Bebas...">
-            <input type="password" id="dev-pass-input" class="lobby-input" placeholder="Masukkan Kode Pass...">
-            <br><br>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-secondary" style="flex:1;" onclick="closeDevModal()">Batal</button>
-                <button class="btn btn-danger" style="flex:1;" onclick="submitDeveloperVerification()">VERIFIKASI</button>
+    <!-- Configuration Panel -->
+    <div class="room-setup-panel" id="lobby-config-area">
+        <h3>Pengaturan Pertandingan</h3>
+        <div class="flex-row-wrap">
+            <input type="text" id="username-input" placeholder="Nama Player..." value="Pembalap Siber" style="padding: 8px 12px; background: #070b12; border: 1px solid #334155; color: white; border-radius: 8px; width: 180px;">
+            <select id="emoji-select" style="padding: 8px 12px; background: #070b12; border: 1px solid #334155; color: white; border-radius: 8px;">
+                <option value="🚗">🚗 Mobil Merah</option>
+                <option value="🏎️">🏎️ F1 Racecar</option>
+                <option value="Police">🚓 Mobil Polisi</option>
+                <option value="🚀">🚀 Roket Siber</option>
+                <option value="🏍️">🏍️ Motor Sport</option>
+            </select>
+            <input type="text" id="room-id-input" placeholder="Kode Kamar (Contoh: BALAP77)" style="padding: 8px 12px; background: #070b12; border: 1px solid #334155; color: white; border-radius: 8px; width: 180px;">
+            
+            <button class="pill-btn active-host" id="btn-mode-race" onclick="setLocalMode('race')">Mode Balapan (No Error)</button>
+            <button class="pill-btn" id="btn-mode-time" onclick="setLocalMode('time')">Mode Waktu (Allow Error)</button>
+            
+            <button class="action-submit-btn" style="width: auto;" onclick="connectAndJoinRoom()">Masuk & Mulai Kamar</button>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button class="pill-btn" id="start-game-trigger" onclick="triggerStartRace()" style="background: #10b981; display: none;">Mulai Balapan Sekarang (Host Only)</button>
+            <button class="pill-btn" id="reset-game-trigger" onclick="triggerResetRace()" style="background: #ef4444; display: none;">Reset Lintasan</button>
+        </div>
+    </div>
+
+    <!-- Main Racing Zone -->
+    <div class="main-panel">
+        <!-- Live Track Area with 3D Layers -->
+        <div class="race-tracks-container">
+            <div class="track-title">🏁 Lintasan Utama Pertandingan Balap (3D Depth Active)</div>
+            <div id="dynamic-lanes-holder">
+                <!-- Injected via JS -->
+                <div style="color: var(--text-muted); text-align: center; padding: 10px;">Silakan join kamar untuk mengaktifkan sirkuit balap.</div>
             </div>
-            <!-- Sub-Panel Kontrol Jika Berhasil Login Dev -->
-            <div id="dev-control-panel" style="display:none; margin-top:20px; border-top:1px solid #ff1744; padding-top:15px; text-align:left;">
-                <p style="color:#00e676; font-weight:bold; font-size:0.9rem;">✓ Akses Khusus Developer Aktif!</p>
-                <label style="font-size:0.85rem; color:#94a3b8;">Daftar Player Ruangan:</label>
-                <div id="dev-player-list" style="margin:8px 0; background:#0f172a; padding:6px; border-radius:4px;"></div>
+        </div>
+
+        <!-- Separate Dedicated Spectator Holding Bay Container -->
+        <div class="spectator-holding-bay">
+            <div class="track-title" style="color: #60a5fa;">🛋️ Ruang Tunggu Mobil Penonton / Spectators Bay</div>
+            <div class="spectator-grid" id="dynamic-spectators-holder">
+                <!-- Injected via JS -->
+                <div style="color: #475569; font-size: 0.85rem;">Tidak ada penonton saat ini.</div>
+            </div>
+        </div>
+
+        <!-- Inject Container Kata Soal Text Area -->
+        <div style="margin-top: 25px;">
+            <div class="words-container" id="text-words-viewport">
+                Silakan masuk kamar untuk mendownload text siber injector...
+            </div>
+        </div>
+
+        <!-- Input Bar with Live Statistics -->
+        <div class="input-bar-container">
+            <input type="text" id="typing-input-field" class="typing-input" placeholder="Tunggu balapan dimulai..." disabled oninput="handleTypingProcess(this)">
+            <div class="live-stats-box" id="live-wpm-counter">0 WPM</div>
+        </div>
+    </div>
+
+    <!-- Persistent Results Table - Keeps scores until next finishes -->
+    <div class="persistent-results-board">
+        <h3 style="color: #00f2ff; font-size: 1.1rem; text-transform: uppercase;">📊 Papan Hasil Akhir Pertandingan Terakhir</h3>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Peringkat</th>
+                    <th>Pembalap / Penonton</th>
+                    <th>Kecepatan (WPM)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="results-table-body">
+                <tr>
+                    <td colspan="4" style="color: var(--text-muted); text-align: center;">Belum ada riwayat hasil balapan yang tercatat.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Developer Access Popup Window -->
+    <div class="cyber-modal-overlay" id="dev-auth-modal">
+        <div class="modal-box">
+            <h3>Akses Developer Pencipta</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Masukkan nama otentik bebas dan kunci kode developer Anda.</p>
+            <input type="text" id="dev-username-field" placeholder="Nama Bebas Developer...">
+            <input type="password" id="dev-password-field" placeholder="Masukkan Password Developer...">
+            <div style="display: flex; gap: 10px;">
+                <button class="action-submit-btn" style="background: var(--dev-color); color: white;" onclick="submitDeveloperAuth()">Unlock System</button>
+                <button class="pill-btn" onclick="closeDeveloperModal()">Batal</button>
             </div>
         </div>
     </div>
 
     <script>
-        const easyWords = ["dan", "yang", "di", "itu", "dengan", "saya", "ke", "tidak", "akan", "dari", "ada", "ini", "dia", "bisa", "kamu", "kita", "mereka", "untuk", "pada"];
-        const hardWords = ["implementasi", "karakteristik", "sinkronisasi", "kontekstual", "infrastruktur", "kompleksitas", "fundamental", "konsekuensi", "asimetris"];
-        
         let socket;
-        let isOnlineMode = false;
-        let isServerHost = true;
-        let currentOnlineRoomId = "";
-        let wordsList = [];
-        let wordLineMappings = [];
+        let currentRoomId = "";
+        let currentMode = "race"; // Default rule mode
+        let currentText = "";
+        let wordsArray = [];
         let currentWordIndex = 0;
-        let totalWordsInBatch = 0;
-        let correctKeystrokes = 0;
-        let startTime = null;
-        let gameActive = false;
-        let loopInterval;
-        let matchDurationTimeout;
-        let finishedRacersData = [];
-        let activeBots = [];
-        let isDevAuthorized = false;
-        let roomPlayersCached = {};
+        let typedWordsWpmCounter = 0; // words successfully counted for WPM
         
-        let playerData = { id: 'player', name: 'Kamu', isFinished: false, currentWpm: 0, progressPercent: 0, carEmoji: "🚗", isOnline: "online", isReady: false, isSpectator: false };
+        let startTime = null;
+        let isJoined = false;
+        let localPlayerName = "";
 
-        function startSinglePlayerMode() {
-            playerData.name = document.getElementById('nickname-input').value.trim() || "RacerSolo";
-            isOnlineMode = false;
-            isServerHost = true;
-            document.getElementById('lobby-panel').style.display = 'none';
-            document.getElementById('main-arena').style.display = 'block';
-            document.getElementById('bot-management-row').style.display = 'table-row';
-            renderLanesLocal();
+        function setLocalMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-mode-race').classList.toggle('active-host', mode === 'race');
+            document.getElementById('btn-mode-time').classList.toggle('active-host', mode === 'time');
         }
 
-        function createNewOnlineRoom() {
-            playerData.name = document.getElementById('nickname-input').value.trim() || "HostRacer";
-            initSocketConnection();
-            socket.emit('createRoom', { playerName: playerData.name });
+        function triggerDeveloperModal() {
+            document.getElementById('dev-auth-modal').classList.add('active');
+        }
+        function closeDeveloperModal() {
+            document.getElementById('dev-auth-modal').classList.remove('active');
         }
 
-        function joinOnlineRoom() {
-            playerData.name = document.getElementById('nickname-input').value.trim() || "GuestRacer";
-            const code = document.getElementById('roomcode-input').value.trim().toUpperCase();
-            if(!code) return alert("Isi Kode Room!");
-            initSocketConnection();
-            socket.emit('joinRoom', { roomId: code, playerName: playerData.name });
-        }
+        function submitDeveloperAuth() {
+            const user = document.getElementById('dev-username-field').value.trim();
+            const pass = document.getElementById('dev-password-field').value.trim();
 
-        function initSocketConnection() {
-            if (socket) return;
-            socket = io();
-            
-            socket.on('joinSuccess', ({ roomId, isHost }) => {
-                isOnlineMode = true;
-                isServerHost = isHost;
-                currentOnlineRoomId = roomId;
-                document.getElementById('lobby-panel').style.display = 'none';
-                document.getElementById('main-arena').style.display = 'block';
-                document.getElementById('room-id-badge').style.display = 'block';
-                document.getElementById('room-code-txt').innerText = roomId;
-                
-                if(!isServerHost) {
-                    document.getElementById('ready-toggle-btn').style.display = 'inline-block';
-                }
-                applyHostAuthorizationUI();
-                broadcastCarUpdate();
-            });
-
-            socket.on('roomData', (roomObject) => {
-                roomPlayersCached = roomObject.players;
-                renderLanesOnline(roomObject.players, roomObject.hostId);
-                if(isDevAuthorized) renderDevControlsUI();
-            });
-
-            socket.on('settingsUpdated', (settings) => {
-                document.getElementById('game-mode').value = settings.gameMode;
-                document.getElementById('word-target-input').value = settings.wordTarget;
-                document.getElementById('time-select').value = settings.timeSelect;
-                document.getElementById('line-view-select').value = settings.lineView || "2";
-                document.getElementById('difficulty-select').value = settings.difficulty;
-                toggleModeSettings();
-            });
-
-            socket.on('gameCountdownStart', ({ wordsList: incomingWords }) => {
-                clearMatchStateData();
-                wordsList = incomingWords;
-                totalWordsInBatch = wordsList.length;
-                renderWords();
-                executeVisualCountdownSequence();
-            });
-
-            socket.on('gagalMulai', ({ unreadyNames }) => {
-                alert("Gagal Mulai! Player belum ready: " + unreadyNames.join(', '));
-            });
-
-            socket.on('receiveFinalData', (serverResults) => {
-                finishedRacersData = serverResults;
-                updateLivePodiumUI();
-                appendPersistentHistoryDOM(serverResults);
-            });
-
-            socket.on('incomingChatMessage', ({ sender, text, senderId }) => {
-                const target = document.getElementById('chat-messages-target');
-                const row = document.createElement('div');
-                row.className = (socket.id === senderId) ? "chat-row row-self" : "chat-row row-other";
-                row.innerHTML = `<div class="chat-msg-item"><strong>${sender}</strong>${text}</div>`;
-                target.appendChild(row);
-                target.scrollTop = target.scrollHeight;
-            });
-
-            socket.on('hostChanged', (newHostId) => {
-                isServerHost = (socket.id === newHostId);
-                document.getElementById('role-text').innerText = isServerHost ? "HOST" : "PLAYER";
-                applyHostAuthorizationUI();
-            });
-
-            socket.on('kickedMsg', (msg) => { alert(msg); leaveRoomAction(); });
-            socket.on('errorMsg', (msg) => { alert(msg); leaveRoomAction(); });
-            
-            socket.on('performReset', () => {
-                clearMatchStateData();
-                document.getElementById('words-wrapper').innerText = "Menunggu host memulai pertandingan...";
-            });
-        }
-
-        /* --- POPUP & LOGIN DEVELOPER (PASSWORD: 160899) --- */
-        function triggerDeveloperAccessPopup() {
-            document.getElementById('dev-access-modal').classList.add('active');
-        }
-        function closeDevModal() {
-            document.getElementById('dev-access-modal').classList.remove('active');
-        }
-        function submitDeveloperVerification() {
-            const name = document.getElementById('dev-name-input').value.trim();
-            const pass = document.getElementById('dev-pass-input').value.trim();
-            if(pass === "160899") {
-                isDevAuthorized = true;
-                playerData.name = name || "👑 Creator";
-                document.getElementById('dev-control-panel').style.display = 'block';
-                alert("Akses khusus diberikan! Anda dapat menendang Host atau mengganti Host.");
-                if(isOnlineMode) {
-                    broadcastCarUpdate();
-                    renderDevControlsUI();
-                }
-            } else {
-                alert("Password Salah!");
-            }
-        }
-
-        function renderDevControlsUI() {
-            const container = document.getElementById('dev-player-list');
-            container.innerHTML = "";
-            Object.keys(roomPlayersCached).forEach(pId => {
-                const p = roomPlayersCached[pId];
-                const div = document.createElement('div');
-                div.style.display = 'flex';
-                div.style.justify = 'space-between';
-                div.style.marginBottom = '5px';
-                div.innerHTML = `
-                    <span style="font-size:0.8rem;">${p.name}</span>
-                    <div>
-                        <button class="btn btn-primary" style="padding:2px 6px; font-size:0.7rem;" onclick="devMakeHostAction('${pId}')">Set Host</button>
-                        <button class="btn btn-danger" style="padding:2px 6px; font-size:0.7rem;" onclick="devKickPlayerAction('${pId}')">Kick</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function devMakeHostAction(targetId) {
-            if(isOnlineMode) socket.emit('devChangeHost', { roomId: currentOnlineRoomId, newHostId: targetId });
-        }
-        function devKickPlayerAction(targetId) {
-            if(isOnlineMode) socket.emit('kickPlayerAction', { roomId: currentOnlineRoomId, targetId });
-        }
-
-        function toggleReadyStatusAction() {
-            playerData.isReady = !playerData.isReady;
-            const btn = document.getElementById('ready-toggle-btn');
-            btn.className = playerData.isReady ? "btn btn-success" : "btn btn-danger";
-            btn.innerText = playerData.isReady ? "🟢 UTAS/READY" : "🔴 BELUM READY";
-            if(isOnlineMode) socket.emit('toggleReady', { roomId: currentOnlineRoomId, isReady: playerData.isReady });
-        }
-
-        function toggleSpectateAction() {
-            playerData.isSpectator = !playerData.isSpectator;
-            const btn = document.getElementById('spectate-btn');
-            btn.innerText = playerData.isSpectator ? "🏎️ Ikut Balap" : "👁️ Nonton Aja";
-            
-            if(isOnlineMode) socket.emit('toggleSpectate', { roomId: currentOnlineRoomId, isSpectator: playerData.isSpectator });
-            else renderLanesLocal();
-        }
-
-        function applyHostAuthorizationUI() {
-            const allowed = isServerHost || isDevAuthorized;
-            document.getElementById('start-btn').style.display = allowed ? 'inline-block' : 'none';
-        }
-
-        function toggleModeSettings() {
-            const mode = document.getElementById('game-mode').value;
-            document.getElementById('row-duration').style.display = mode === 'time' ? 'table-row' : 'none';
-            document.getElementById('row-word-count').style.display = mode === 'words' ? 'table-row' : 'none';
-        }
-
-        function broadcastSettings() {
-            if (!isOnlineMode || !isServerHost) return;
-            socket.emit('updateSettingsServer', {
-                roomId: currentOnlineRoomId,
-                gameMode: document.getElementById('game-mode').value,
-                wordTarget: document.getElementById('word-target-input').value,
-                timeSelect: document.getElementById('time-select').value,
-                lineView: document.getElementById('line-view-select').value,
-                difficulty: document.getElementById('difficulty-select').value
-            });
-        }
-
-        function toggleAccordionAction() {
-            document.getElementById('accordion-content-body').classList.toggle('collapsed');
-        }
-        function toggleChatPanelAction() {
-            const open = document.getElementById('chat-sidebar-panel').classList.toggle('chat-minimized');
-            document.getElementById('chat-collapsible-wrapper').style.display = open ? 'none' : 'flex';
-            document.getElementById('chat-toggle-btn').innerText = open ? "Maximize" : "Minimize";
-        }
-
-        function openGarageModal() { document.getElementById('garage-modal').classList.add('active'); }
-        function closeGarageModal() { document.getElementById('garage-modal').classList.remove('active'); }
-        function selectCarFromGarage(emoji, elId) {
-            document.querySelectorAll('.garage-item').forEach(e => e.classList.remove('selected-car'));
-            document.getElementById(elId).classList.add('selected-car');
-            playerData.carEmoji = emoji;
-            document.getElementById('current-car-preview').innerText = emoji;
-            if(!isOnlineMode) renderLanesLocal(); else broadcastCarUpdate();
-        }
-        function broadcastCarUpdate() { if(isOnlineMode) socket.emit('updateCar', { roomId: currentOnlineRoomId, carEmoji: playerData.carEmoji }); }
-
-        function addBot() {
-            activeBots.push({ id: 'bot_'+Date.now(), name: "Bot_Avanza", carEmoji: "🤖", baseWpm: 55, currentWpm: 0, progressPercent: 0, isFinished: false });
-            renderLanesLocal();
-        }
-        function removeBot() { activeBots.pop(); renderLanesLocal(); }
-
-        /* --- RENDERING LINTASAN DAN MANAJEMEN PENONTON --- */
-        function renderLanesLocal() {
-            const container = document.getElementById('lanes-container'); container.innerHTML = "";
-            const specLot = document.getElementById('spectator-parking-lot'); specLot.innerHTML = "";
-            
-            if(!playerData.isSpectator) {
-                container.appendChild(createLaneDOM(playerData.id, playerData.name, playerData.carEmoji, playerData.currentWpm, playerData.progressPercent));
-            } else {
-                specLot.appendChild(createSpectatorCarDOM(playerData.name, playerData.carEmoji));
-            }
-
-            activeBots.forEach(b => {
-                container.appendChild(createLaneDOM(b.id, b.name, b.carEmoji, b.currentWpm, b.progressPercent));
-            });
-            manageSpectatorPlaceholderText();
-        }
-
-        function renderLanesOnline(playersObj, hostId) {
-            const container = document.getElementById('lanes-container'); container.innerHTML = "";
-            const specLot = document.getElementById('spectator-parking-lot'); specLot.innerHTML = "";
-
-            Object.keys(playersObj).forEach(pId => {
-                const p = playersObj[pId];
-                if(p.isSpectator) {
-                    specLot.appendChild(createSpectatorCarDOM(p.name, p.carEmoji));
+            if (pass === "160899") {
+                alert("Otentikasi Pencipta Berhasil! Akses Khusus Developer Terbuka.");
+                closeDeveloperModal();
+                if (socket && currentRoomId) {
+                    socket.emit('authDeveloper', { roomId: currentRoomId, username: user || "DevPencipta" });
                 } else {
-                    const isMe = (pId === socket.id);
-                    container.appendChild(createLaneDOM(p.id, isMe ? `${p.name} (Kamu)` : p.name, p.carEmoji, p.currentWpm, p.progressPercent));
+                    alert("Developer diaktifkan lokal. Silakan join kamar balap untuk menyinkronkan panel kontrol.");
+                    document.getElementById('dev-admin-dashboard').style.display = 'flex';
                 }
-            });
-            manageSpectatorPlaceholderText();
-        }
-
-        function createLaneDOM(id, name, emoji, wpm, progress) {
-            const lane = document.createElement('div');
-            lane.className = "track-lane";
-            lane.innerHTML = `
-                <div class="lane-info">
-                    <span><strong>${name}</strong></span>
-                    <span class="wpm-counter"><span>${wpm}</span> WPM</span>
-                </div>
-                <div class="car-node-wrapper" style="left: calc(${progress}% - ${progress > 0 ? 50 : 0}px);">
-                    <div class="car">${emoji}</div>
-                </div>
-            `;
-            return lane;
-        }
-
-        function createSpectatorCarDOM(name, emoji) {
-            const div = document.createElement('div');
-            div.className = "spectator-car-item";
-            div.innerHTML = `<div class="spectator-car-icon">${emoji}</div><div>${name}</div>`;
-            return div;
-        }
-
-        function manageSpectatorPlaceholderText() {
-            const lot = document.getElementById('spectator-parking-lot');
-            if(lot.children.length === 0) {
-                lot.innerHTML = `<span style="color:#475569; font-size:0.85rem;">Tidak ada penonton di area parkir saat ini.</span>`;
+            } else {
+                alert("Password Salah! Akses Ditolak.");
             }
         }
 
-        function generateWordsBatch() {
-            const count = parseInt(document.getElementById('word-target-input').value) || 25;
-            const source = document.getElementById('difficulty-select').value === 'hard' ? hardWords : easyWords;
-            let arr = [];
-            for(let i=0; i<count; i++) { arr.push(source[Math.floor(Math.random() * source.length)]); }
-            return arr;
+        function executeDevKick() {
+            const target = document.getElementById('dev-target-id').value.trim();
+            if(!target) return alert("Masukkan ID target Player/Host!");
+            socket.emit('devKickPlayer', { roomId: currentRoomId, targetPlayerId: target });
         }
 
-        function startGameCountdown() {
-            if(isOnlineMode) socket.emit('triggerCountdownServer', { roomId: currentOnlineRoomId, wordsList: generateWordsBatch() });
-            else { clearMatchStateData(); wordsList = generateWordsBatch(); totalWordsInBatch = wordsList.length; renderWords(); executeVisualCountdownSequence(); }
+        function executeDevTransferHost() {
+            const target = document.getElementById('dev-target-id').value.trim();
+            if(!target) return alert("Masukkan ID target Player!");
+            socket.emit('devTransferHost', { roomId: currentRoomId, newHostId: target });
         }
 
-        function executeVisualCountdownSequence() {
-            const box = document.getElementById('countdown-box'); box.style.display = 'flex';
-            let s = 3; document.getElementById('countdown-number').innerText = `:${s}`;
-            let t = setInterval(() => {
-                s--; document.getElementById('countdown-number').innerText = `:${s}`;
-                if(s === 0) {
-                    clearInterval(t); box.style.display = 'none'; triggerActualGameLaunch();
-                }
-            }, 1000);
-        }
+        function connectAndJoinRoom() {
+            const nameInput = document.getElementById('username-input').value.trim();
+            const emojiInput = document.getElementById('emoji-select').value;
+            let roomInput = document.getElementById('room-id-input').value.trim().toUpperCase();
 
-        function renderWords() {
-            const wrapper = document.getElementById('words-wrapper'); wrapper.innerHTML = "";
-            wordLineMappings = [];
-            const view = document.getElementById('line-view-select').value;
-            
-            if(view === 'all') {
-                let div = document.createElement('div'); div.className = "word-line";
-                wordsList.forEach((w, i) => {
-                    let span = document.createElement('span'); span.className = (i===currentWordIndex)?"word current":"word";
-                    span.id = `word-${i}`; span.innerText = w; div.appendChild(span);
+            if (!roomInput) roomInput = "XBALAP";
+            currentRoomId = roomInput;
+            localPlayerName = nameInput || "Pembalap";
+
+            // Initialize Connection
+            socket = io();
+
+            socket.on('connect', () => {
+                document.getElementById('room-code-badge').innerText = currentRoomId;
+                // Join as racer/player initially
+                socket.emit('joinRoom', {
+                    roomId: currentRoomId,
+                    name: localPlayerName,
+                    emoji: emojiInput,
+                    isSpectator: false,
+                    mode: currentMode
                 });
-                wrapper.appendChild(div);
+                isJoined = true;
+                document.getElementById('lobby-config-area').style.background = '#0f172a';
+            });
+
+            socket.on('roomData', (room) => {
+                currentMode = room.gameMode;
+                updateCircuitUI(room);
+                
+                // Show Host controls if player is host or is Developer
+                const isHost = room.hostId === socket.id;
+                const isDev = room.players[socket.id]?.isDeveloper;
+                
+                if (isDev) {
+                    document.getElementById('dev-admin-dashboard').style.display = 'flex';
+                }
+
+                if (isHost || isDev) {
+                    document.getElementById('start-game-trigger').style.display = 'inline-block';
+                    document.getElementById('reset-game-trigger').style.display = 'inline-block';
+                } else {
+                    document.getElementById('start-game-trigger').style.display = 'none';
+                    document.getElementById('reset-game-trigger').style.display = 'none';
+                }
+            });
+
+            socket.on('raceStarted', ({ text, gameMode }) => {
+                currentText = text;
+                currentMode = gameMode;
+                wordsArray = text.split(" ");
+                currentWordIndex = 0;
+                typedWordsWpmCounter = 0;
+                startTime = Date.now();
+
+                renderWordsViewport();
+                
+                const inputField = document.getElementById('typing-input-field');
+                inputField.disabled = false;
+                inputField.value = "";
+                inputField.focus();
+                inputField.placeholder = "Ketik teks di atas secepat mungkin!";
+                inputField.classList.remove('error-glow');
+            });
+
+            socket.on('roomReset', (room) => {
+                const inputField = document.getElementById('typing-input-field');
+                inputField.disabled = true;
+                inputField.value = "";
+                inputField.placeholder = "Menunggu host memulai pertandingan...";
+                document.getElementById('live-wpm-counter').innerText = "0 WPM";
+                
+                currentText = room.text;
+                wordsArray = currentText.split(" ");
+                currentWordIndex = 0;
+                typedWordsWpmCounter = 0;
+                renderWordsViewport();
+            });
+
+            socket.on('receiveFinalData', (results) => {
+                renderPersistentResultsTable(results);
+            });
+
+            socket.on('developerAuthed', () => {
+                document.getElementById('dev-admin-dashboard').style.display = 'flex';
+            });
+
+            socket.on('kickedFromRoom', () => {
+                alert("Anda telah dikick dari room oleh Developer Pencipta!");
+                window.location.reload();
+            });
+        }
+
+        function updateCircuitUI(room) {
+            const lanesContainer = document.getElementById('dynamic-lanes-holder');
+            const specsContainer = document.getElementById('dynamic-spectators-holder');
+            lanesContainer.innerHTML = "";
+            specsContainer.innerHTML = "";
+
+            let standardPlayersFound = false;
+            let spectatorsFound = false;
+
+            Object.values(room.players).forEach(p => {
+                if (!p.isSpectator) {
+                    standardPlayersFound = true;
+                    // Draw lane track
+                    const lane = document.createElement('div');
+                    lane.className = "player-track-lane";
+                    
+                    const isHostMarker = room.hostId === p.id ? " [HOST]" : "";
+                    const isDevMarker = p.isDeveloper ? " [DEV]" : "";
+                    
+                    lane.innerHTML = `
+                        <div class="lane-info">${p.name}${isHostMarker}${isDevMarker} (${p.currentWpm} WPM) - ID: ${p.id.substring(0,5)}</div>
+                        <div class="car-avatar-wrapper" style="left: ${p.progressPercent}%; text-shadow: 2px ${4 + (p.progressPercent * 0.05)}px 5px rgba(0,0,0,0.7);">
+                            ${p.emoji}
+                        </div>
+                    `;
+                    lanesContainer.appendChild(lane);
+                } else {
+                    spectatorsFound = true;
+                    // Draw spectator card
+                    const specBox = document.createElement('div');
+                    specBox.className = "spectator-car-box";
+                    specBox.innerHTML = `
+                        <div class="spec-car">${p.emoji}</div>
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:bold;">${p.name}</div>
+                            <div style="font-size:0.65rem; color:var(--text-muted)">Penonton</div>
+                        </div>
+                    `;
+                    specsContainer.appendChild(specBox);
+                }
+            });
+
+            if (!standardPlayersFound) {
+                lanesContainer.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:10px;">Belum ada pembalap di dalam sirkuit.</div>';
+            }
+            if (!spectatorsFound) {
+                specsContainer.innerHTML = '<div style="color:#475569; font-size:0.85rem;">Tidak ada penonton di holding bay.</div>';
+            }
+        }
+
+        function renderWordsViewport() {
+            const container = document.getElementById('text-words-viewport');
+            container.innerHTML = "";
+            wordsArray.forEach((word, idx) => {
+                const span = document.createElement('span');
+                span.className = "word-token";
+                if (idx === currentWordIndex) span.className += " current";
+                span.innerText = word;
+                span.id = `token-id-${idx}`;
+                container.appendChild(span);
+            });
+        }
+
+        function handleTypingProcess(inputElement) {
+            const currentInputValue = inputElement.value;
+            const targetWord = wordsArray[currentWordIndex];
+            const tokenSpan = document.getElementById(`token-id-${currentWordIndex}`);
+
+            // Live checking for sub-word typos
+            if (currentInputValue === targetWord.substring(0, currentInputValue.length)) {
+                inputElement.classList.remove('error-glow');
+                if(tokenSpan) {
+                    tokenSpan.className = "word-token current";
+                }
+            } else {
+                inputElement.classList.add('error-glow');
+                if(tokenSpan) {
+                    tokenSpan.className = "word-token current wrong";
+                }
+            }
+
+            // Detect space activation or final word completion
+            if (currentInputValue.endsWith(" ") || currentWordIndex === wordsArray.length - 1 && currentInputValue === targetWord) {
+                const typedCleanWord = currentInputValue.trim();
+                
+                if (currentMode === "race") {
+                    // RACE MODE RULE: MUST NOT BE WRONG. Lock advance if wrong.
+                    if (typedCleanWord === targetWord) {
+                        tokenSpan.className = "word-token correct";
+                        typedWordsWpmCounter++;
+                        advanceToNextWord(inputElement);
+                    } else {
+                        // Keep error glow, do not advance, ignore the space spacebar key
+                        inputElement.classList.add('error-glow');
+                    }
+                } else {
+                    // TIME MODE RULE: ALLOW ERROR. Advance anyway but wrong words get NO points.
+                    if (typedCleanWord === targetWord) {
+                        tokenSpan.className = "word-token correct";
+                        typedWordsWpmCounter++;
+                    } else {
+                        tokenSpan.className = "word-token wrong";
+                        // NO increment for typedWordsWpmCounter!
+                    }
+                    advanceToNextWord(inputElement);
+                }
+            }
+        }
+
+        function advanceToNextWord(inputElement) {
+            currentWordIndex++;
+            inputElement.value = "";
+            inputElement.classList.remove('error-glow');
+
+            // Calculate live progress and speed
+            const progress = Math.min(100, Math.round((currentWordIndex / wordsArray.length) * 100));
+            const elapsedMinutes = (Date.now() - startTime) / 60000;
+            const currentWpm = elapsedMinutes > 0 ? Math.round(typedWordsWpmCounter / elapsedMinutes) : 0;
+
+            document.getElementById('live-wpm-counter').innerText = `${currentWpm} WPM`;
+
+            // Emit live progress to server
+            socket.emit('updateProgress', {
+                roomId: currentRoomId,
+                progressPercent: progress,
+                currentWpm: currentWpm
+            });
+
+            if (currentWordIndex >= wordsArray.length) {
+                // Finished the text!
+                inputElement.disabled = true;
+                inputElement.placeholder = "Selesai! Menghitung skor final...";
+                socket.emit('submitFinalData', {
+                    roomId: currentRoomId,
+                    name: localPlayerName,
+                    wpm: currentWpm,
+                    isPlayer: true,
+                    emoji: document.getElementById('emoji-select').value
+                });
+            } else {
+                // Highlight next token active
+                const nextToken = document.getElementById(`token-id-${currentWordIndex}`);
+                if (nextToken) nextToken.className = "word-token current";
+            }
+        }
+
+        function renderPersistentResultsTable(results) {
+            const tbody = document.getElementById('results-table-body');
+            tbody.innerHTML = "";
+
+            if (!results || results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted); text-align:center;">Belum ada riwayat hasil balapan.</td></tr>';
                 return;
             }
 
-            let perLine = view === '1' ? 6 : 9;
-            let sub = [];
-            wordsList.forEach((w, i) => {
-                sub.push(i);
-                if(sub.length >= perLine || i === wordsList.length - 1) { wordLineMappings.push(sub); sub = []; }
-            });
-
-            wordLineMappings.forEach((line, lIdx) => {
-                let div = document.createElement('div'); div.className = "word-line";
-                line.forEach(idx => {
-                    let span = document.createElement('span'); span.className = (idx===currentWordIndex)?"word current":"word";
-                    span.id = `word-${idx}`; span.innerText = wordsList[idx]; div.appendChild(span);
-                });
-                wrapper.appendChild(div);
-            });
-        }
-
-        function triggerActualGameLaunch() {
-            gameActive = true; startTime = new Date();
-            document.getElementById('input-box').disabled = false;
-            document.getElementById('input-box').focus();
-
-            if(document.getElementById('game-mode').value === 'time') {
-                let rem = parseInt(document.getElementById('time-select').value) || 60;
-                document.getElementById('live-timer-banner').style.display = 'block';
-                matchDurationTimeout = setInterval(() => {
-                    rem--; document.getElementById('live-seconds-countdown').innerText = rem;
-                    if(rem <= 0) terminateMatchEndSequence();
-                }, 1000);
-            }
-
-            loopInterval = setInterval(() => {
-                if(!isOnlineMode) { processBotsSimulatedEngine(); renderLanesLocal(); } 
-                else { sendProgressOnlineBroadcast(); }
-            }, 300);
-        }
-
-        function processBotsSimulatedEngine() {
-            activeBots.forEach(b => {
-                if(b.isFinished) return;
-                b.currentWpm = 50 + Math.floor(Math.random()*10);
-                b.progressPercent = Math.min(100, b.progressPercent + 2);
-                if(b.progressPercent >= 100) { b.isFinished = true; }
-            });
-        }
-
-        function sendProgressOnlineBroadcast() {
-            if(playerData.isFinished || playerData.isSpectator) return;
-            calculateLiveStatsWpmProgress();
-            socket.emit('updateProgress', { roomId: currentOnlineRoomId, progressPercent: playerData.progressPercent, currentWpm: playerData.currentWpm });
-        }
-
-        function calculateLiveStatsWpmProgress() {
-            let mins = (new Date() - startTime) / 60000;
-            playerData.currentWpm = Math.floor((correctKeystrokes / 5) / mins) || 0;
-            if(document.getElementById('game-mode').value === 'words') {
-                playerData.progressPercent = Math.min(100, (currentWordIndex / totalWordsInBatch) * 100);
-            } else {
-                let totalDur = parseInt(document.getElementById('time-select').value) || 60;
-                playerData.progressPercent = Math.min(100, (((new Date() - startTime)/1000) / totalDur) * 100);
-            }
-        }
-
-        /* --- SINKRONISASI EVALUASI DAN HIGHLIGHTING PER KATA --- */
-        const inpBox = document.getElementById('input-box');
-        inpBox.addEventListener('input', (e) => {
-            if(!gameActive || playerData.isFinished) return;
-            const typed = inpBox.value;
-            const currentTarget = wordsList[currentWordIndex];
-            const mode = document.getElementById('game-mode').value;
-            const span = document.getElementById(`word-${currentWordIndex}`);
-
-            // Validasi Pengetikan Realtime untuk Highlight
-            if(currentTarget.startsWith(typed)) {
-                inpBox.className = "";
-                if(span) span.className = "word current";
-            } else {
-                // Bergetar jika salah input huruf
-                document.getElementById('race-track-card').classList.add('shake-active');
-                setTimeout(() => document.getElementById('race-track-card').classList.remove('shake-active'), 100);
-                inpBox.className = "input-error";
-                if(span) span.className = "word current error";
-            }
-
-            // ATURAN MEKANISME SUBMIT KATA LEWAT SPASI
-            if(typed.endsWith(" ")) {
-                const cleanTyped = typed.trim();
-                
-                if(mode === "words") {
-                    // MODE BALAPAN: Jika ada yang salah, spasi diblok/tidak bisa lanjut sebelum diperbaiki!
-                    if(cleanTyped !== currentTarget) {
-                        inpBox.value = cleanTyped; // Tahan kata tanpa spasi tambahan
-                        return; 
-                    }
-                    // Jika benar
-                    correctKeystrokes += currentTarget.length + 1;
-                    if(span) span.className = "word completed";
-                } else {
-                    // MODE WAKTU: Boleh salah ketik, tetap bisa spasi dan lanjut ke kata berikutnya
-                    if(cleanTyped === currentTarget) {
-                        correctKeystrokes += currentTarget.length + 1;
-                        if(span) span.className = "word completed";
-                    } else {
-                        // Salah ketik -> tidak terhitung ke dalam correctKeystrokes (Skor WPM tidak bertambah)
-                        if(span) span.className = "word completed-wrong";
-                    }
-                }
-
-                currentWordIndex++;
-                inpBox.value = "";
-                calculateLiveStatsWpmProgress();
-                
-                if(currentWordIndex >= wordsList.length) {
-                    terminateMatchEndSequence();
-                } else {
-                    let nextSpan = document.getElementById(`word-${currentWordIndex}`);
-                    if(nextSpan) nextSpan.className = "word current";
-                }
-            }
-        });
-
-        function terminateMatchEndSequence() {
-            gameActive = false; clearInterval(loopInterval); clearInterval(matchDurationTimeout);
-            playerData.isFinished = true;
-            document.getElementById('input-box').disabled = true;
-            document.getElementById('input-box').value = "FINISH!";
-            
-            if(isOnlineMode) {
-                socket.emit('submitFinalData', { roomId: currentOnlineRoomId, name: playerData.name, wpm: playerData.currentWpm, isPlayer: true, emoji: playerData.carEmoji });
-            } else {
-                finishedRacersData.push({ name: playerData.name, wpm: playerData.currentWpm, emoji: playerData.carEmoji, timestamp: new Date().toLocaleTimeString() });
-                updateLivePodiumUI();
-                appendPersistentHistoryDOM(finishedRacersData);
-            }
-        }
-
-        function updateLivePodiumUI() {
-            for(let i=1; i<=3; i++) {
-                let r = finishedRacersData[i-1];
-                if(r) {
-                    document.getElementById(`podium-${i}-meta`).innerText = `${r.name}\n${r.wpm} WPM`;
-                    document.getElementById(`podium-${i}-car`).innerText = r.emoji;
-                }
-            }
-        }
-
-        /* --- MENAMPILKAN PERSISTENT HISTORY (HASIL BERKELANJUTAN) --- */
-        function appendPersistentHistoryDOM(results) {
-            const tbody = document.getElementById('persistent-history-rows');
-            // Bersihkan teks placeholder awal jika ada baris data masuk
-            if(results.length > 0 && tbody.innerHTML.includes("Belum ada riwayat")) tbody.innerHTML = "";
-            
-            results.forEach(r => {
+            results.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="color:var(--text-muted); font-size:0.8rem;">${r.timestamp || 'Baru Saja'}</td>
-                    <td>${r.emoji} <strong>${r.name}</strong></td>
-                    <td style="color:var(--correct-color); font-weight:bold;">${r.wpm} WPM</td>
+                    <td style="font-weight:bold; color:var(--accent-color);">#${index + 1}</td>
+                    <td><span style="margin-right:8px;">${row.emoji || '🚗'}</span> ${row.name}</td>
+                    <td style="font-weight:bold; color:#10b981;">${row.wpm} WPM</td>
+                    <td><span class="status-dot online"></span> Selesai</td>
                 `;
-                tbody.insertBefore(tr, tbody.firstChild); // Masukkan hasil terbaru di atas
+                tbody.appendChild(tr);
             });
         }
 
-        function sendChatMessageAction() {
-            const box = document.getElementById('chat-input-box');
-            if(!box.value.trim()) return;
-            if(isOnlineMode) socket.emit('sendChatMessage', { roomId: currentOnlineRoomId, sender: playerData.name, text: box.value.trim(), senderId: socket.id });
-            box.value = "";
+        function triggerStartRace() {
+            if(!socket || !currentRoomId) return;
+            const customText = prompt("Masukkan Teks Kustom jika diinginkan, atau kosongkan untuk teks default:", currentText);
+            socket.emit('startRace', {
+                roomId: currentRoomId,
+                text: customText || undefined,
+                mode: currentMode
+            });
         }
 
-        function abortAndResetMatchAction() {
-            if(isOnlineMode) socket.emit('abortMatchMidWay', { roomId: currentOnlineRoomId });
+        function triggerResetRace() {
+            if(!socket || !currentRoomId) return;
+            socket.emit('requestReset', { roomId: currentRoomId });
         }
-
-        function clearMatchStateData() {
-            gameActive = false; currentWordIndex = 0; correctKeystrokes = 0;
-            playerData.isFinished = false; playerData.progressPercent = 0; playerData.currentWpm = 0;
-            document.getElementById('input-box').value = "";
-            document.getElementById('input-box').disabled = true;
-            document.getElementById('live-timer-banner').style.display = 'none';
-        }
-
-        function copyRoomShareLink() {
-            navigator.clipboard.writeText(window.location.origin + "?room=" + currentOnlineRoomId);
-            alert("Link Kamar Disalin!");
-        }
-        function leaveRoomAction() { window.location.reload(); }
     </script>
 </body>
 </html>
