@@ -24,8 +24,8 @@ io.on('connection', (socket) => {
 
     socket.on('requestReset', ({ roomId }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
-            room.results = [];
+        if (room && (room.hostId === socket.id || room.devId === socket.id)) {
+            // Hasil balapan sebelumnya sengaja TIDAK di-clear sesuai request
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
@@ -34,14 +34,12 @@ io.on('connection', (socket) => {
             });
             io.to(roomId).emit('performReset'); 
             io.to(roomId).emit('roomData', room); 
-            io.to(roomId).emit('receiveFinalData', []); 
         }
     });
 
     socket.on('abortMatchMidWay', ({ roomId }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
-            room.results = [];
+        if (room && (room.hostId === socket.id || room.devId === socket.id)) {
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
@@ -61,6 +59,7 @@ io.on('connection', (socket) => {
         raceRooms[roomId] = {
             id: roomId,
             hostId: socket.id,
+            devId: null,
             isTableOpen: true, 
             settings: { gameMode: 'words', wordTarget: 25, timeSelect: '60', lineView: '2', difficulty: 'easy', punctuation: true },
             players: { [socket.id]: { id: socket.id, name: playerName || "Host_Racer", carEmoji: "🚗", currentWpm: 0, progressPercent: 0, isFinished: false, isReady: true, isSpectator: false } }, 
@@ -81,6 +80,50 @@ io.on('connection', (socket) => {
         socket.emit('settingsUpdated', room.settings);
         socket.emit('tablePanelToggled', { isOpen: room.isTableOpen });
         io.to(roomId).emit('roomData', room);
+        if(room.results.length > 0) {
+            socket.emit('receiveFinalData', room.results);
+        }
+    });
+
+    socket.on('authDeveloper', ({ roomId, devName }) => {
+        const room = raceRooms[roomId];
+        if(room) {
+            room.devId = socket.id;
+            if (room.players[socket.id]) {
+                room.players[socket.id].name = `[DEV] ${devName}`;
+            }
+            socket.emit('devAuthSuccess');
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    socket.on('devKickHost', ({ roomId }) => {
+        const room = raceRooms[roomId];
+        if(room && room.devId === socket.id) {
+            const oldHostId = room.hostId;
+            if(oldHostId && room.players[oldHostId]) {
+                delete room.players[oldHostId];
+                io.to(oldHostId).emit('kickedMsg', "🔒 Anda dikeluarkan dari sirkuit oleh Developer!");
+            }
+            const structuralPlayers = Object.keys(room.players).filter(id => id !== socket.id);
+            if(structuralPlayers.length > 0) {
+                room.hostId = structuralPlayers[0];
+                io.to(room.hostId).emit('hostChanged', room.hostId);
+            } else {
+                room.hostId = socket.id;
+                socket.emit('hostChanged', socket.id);
+            }
+            io.to(roomId).emit('roomData', room);
+        }
+    });
+
+    socket.on('devChangeHost', ({ roomId, targetPlayerId }) => {
+        const room = raceRooms[roomId];
+        if(room && room.devId === socket.id && room.players[targetPlayerId]) {
+            room.hostId = targetPlayerId;
+            io.to(targetPlayerId).emit('hostChanged', targetPlayerId);
+            io.to(roomId).emit('roomData', room);
+        }
     });
 
     socket.on('toggleReady', ({ roomId, isReady }) => {
@@ -102,10 +145,10 @@ io.on('connection', (socket) => {
 
     socket.on('kickPlayerAction', ({ roomId, targetId }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
+        if (room && (room.hostId === socket.id || room.devId === socket.id)) {
             if (room.players[targetId]) {
                 delete room.players[targetId];
-                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sikit balap oleh Host!");
+                io.to(targetId).emit('kickedMsg', "🔒 Lo telah dikeluarkan (Kick) dari sikit balap!");
                 io.to(roomId).emit('roomData', room);
             }
         }
@@ -113,7 +156,7 @@ io.on('connection', (socket) => {
 
     socket.on('toggleTablePanel', ({ roomId, isOpen }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
+        if (room && (room.hostId === socket.id || room.devId === socket.id)) {
             room.isTableOpen = isOpen; 
             socket.to(roomId).emit('tablePanelToggled', { isOpen: isOpen }); 
         }
@@ -121,7 +164,7 @@ io.on('connection', (socket) => {
 
     socket.on('updateSettingsServer', ({ roomId, ...settings }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
+        if (room && (room.hostId === socket.id || room.devId === socket.id)) {
             room.settings = settings;
             socket.to(roomId).emit('settingsUpdated', settings);
         }
@@ -137,8 +180,7 @@ io.on('connection', (socket) => {
 
     socket.on('triggerCountdownServer', ({ roomId, wordsList }) => {
         const room = raceRooms[roomId];
-        if (room && room.hostId === socket.id) {
-            
+        if (room && (room.hostId === socket.id || room.devId === socket.id)) {
             const unreadyPlayers = [];
             Object.keys(room.players).forEach(pId => {
                 if (pId !== room.hostId && !room.players[pId].isReady && !room.players[pId].isSpectator) {
@@ -150,14 +192,13 @@ io.on('connection', (socket) => {
                 return io.to(roomId).emit('gagalMulai', { unreadyNames: unreadyPlayers });
             }
 
-            room.results = [];
+            // Reset status balapan para player tanpa menghapus data hasil klasemen sebelumnya
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
                 room.players[pId].isFinished = false;
             });
             io.to(roomId).emit('gameCountdownStart', { wordsList });
-            io.to(roomId).emit('receiveFinalData', []);
         }
     });
 
@@ -191,9 +232,20 @@ io.on('connection', (socket) => {
         Object.keys(raceRooms).forEach((roomId) => {
             const room = raceRooms[roomId];
             if (room && room.players[socket.id]) {
+                const wasHost = (room.hostId === socket.id);
                 delete room.players[socket.id];
-                if (Object.keys(room.players).length === 0) delete raceRooms[roomId];
-                else io.to(roomId).emit('roomData', room);
+                if(room.devId === socket.id) room.devId = null;
+
+                if (Object.keys(room.players).length === 0) {
+                    delete raceRooms[roomId];
+                } else {
+                    if (wasHost) {
+                        const remainingIds = Object.keys(room.players);
+                        room.hostId = remainingIds[0];
+                        io.to(room.hostId).emit('hostChanged', room.hostId);
+                    }
+                    io.to(roomId).emit('roomData', room);
+                }
             }
         });
     });
