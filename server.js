@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
     socket.on('requestReset', ({ roomId }) => {
         const room = raceRooms[roomId];
         if (room && (room.hostId === socket.id || room.devId === socket.id)) {
-            // Hasil balapan sebelumnya sengaja TIDAK di-clear sesuai request
+            room.results = [];
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
@@ -40,6 +40,7 @@ io.on('connection', (socket) => {
     socket.on('abortMatchMidWay', ({ roomId }) => {
         const room = raceRooms[roomId];
         if (room && (room.hostId === socket.id || room.devId === socket.id)) {
+            room.results = [];
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
@@ -192,7 +193,7 @@ io.on('connection', (socket) => {
                 return io.to(roomId).emit('gagalMulai', { unreadyNames: unreadyPlayers });
             }
 
-            // Reset status balapan para player tanpa menghapus data hasil klasemen sebelumnya
+            room.results = [];
             Object.keys(room.players).forEach(pId => {
                 room.players[pId].currentWpm = 0;
                 room.players[pId].progressPercent = 0;
