@@ -5,10 +5,465 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cyber Typing Race - Grand Championship V10</title>
     <meta name="google-site-verification" content="AtIoVgHpcsxMYtx7W1MnCqSLkxT5OXTX7V9Bl_w6R0g" />
-    
     <script src="/socket.io/socket.io.js"></script>
-    
-    <link rel="stylesheet" href="style.css">
+    <style>
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .online { background-color: #4ade80; box-shadow: 0 0 8px #4ade80; } 
+        .offline { background-color: #f87171; box-shadow: 0 0 8px #f87171; } 
+        
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #131c2e;
+            --accent-color: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
+            --correct-color: #4ade80;
+            --wrong-color: #f87171;
+            --chat-self: #0284c7;
+            --container-glow: rgba(56, 189, 248, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .lobby-panel {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px var(--container-glow);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .lobby-input {
+            width: 85%;
+            padding: 12px;
+            margin: 10px 0;
+            background-color: #070a12;
+            color: var(--text-main);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 6px;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+        }
+        .lobby-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        /* --- CHAT BOX FLOATING DESIGN --- */
+        .chat-top-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 340px;
+            height: 420px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 2000;
+            border: 2px solid var(--accent-color);
+            resize: both;
+            min-width: 280px;
+            min-height: 250px;
+            max-width: 600px;
+            max-height: 700px;
+            transition: height 0.2s ease, width 0.2s ease;
+        }
+        
+        .chat-top-container.chat-minimized {
+            height: 42px !important;
+            min-height: 42px !important;
+            width: 280px !important;
+            resize: none !important;
+            overflow: hidden !important; 
+        }
+
+        .chat-header {
+            background-color: #1a263f;
+            padding: 0 15px;
+            font-weight: bold;
+            color: var(--accent-color);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+            height: 42px;
+            min-height: 42px;
+            box-sizing: border-box;
+        }
+        .chat-collapsible-body {
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 42px);
+            width: 100%;
+        }
+        .chat-messages {
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.85rem;
+            flex-grow: 1;
+            background: rgba(11, 15, 25, 0.7);
+        }
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track { background: #0f172a; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
+
+        .chat-row { display: flex; width: 100%; }
+        .chat-row.row-self { justify-content: flex-end; }
+        .chat-row.row-other { justify-content: flex-start; }
+
+        .chat-msg-item {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+        .row-self .chat-msg-item {
+            background-color: var(--chat-self);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+        .row-other .chat-msg-item {
+            background-color: #243454;
+            color: var(--text-main);
+            border-bottom-left-radius: 2px;
+            border-left: 3px solid var(--accent-color);
+        }
+        .chat-msg-item strong { display: block; font-size: 0.75rem; margin-bottom: 2px; color: #a5f3fc; }
+        .row-self .chat-msg-item strong { color: #fef08a; }
+
+        .chat-emoji-bar {
+            display: flex;
+            gap: 5px;
+            padding: 4px 12px;
+            background: #0b0f19;
+            border-top: 1px solid rgba(56, 189, 248, 0.1);
+        }
+        .emoji-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 2px;
+            transition: transform 0.1s;
+        }
+        .emoji-btn:hover { transform: scale(1.3); }
+
+        .chat-input-wrapper { display: flex; border-top: 1px solid rgba(56, 189, 248, 0.2); background: #0b0f19; padding: 8px 12px; gap: 6px; align-items: center; }
+        #chat-input-box { flex: 1; background: var(--bg-color); border: 1px solid var(--text-muted); color: var(--text-main); border-radius: 6px; padding: 8px; outline: none; font-size: 0.85rem; }
+        
+        /* --- ACCORDION PANELS --- */
+        .accordion-wrapper {
+            width: 100%;
+            max-width: 850px;
+            background-color: var(--card-bg);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .accordion-header {
+            padding: 15px 20px;
+            background-color: #1a263f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .accordion-title { font-weight: bold; font-size: 1.1rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
+        .accordion-content { max-height: 600px; transition: max-height 0.4s ease-out, padding 0.4s ease-out; padding: 20px; box-sizing: border-box; }
+        .accordion-content.collapsed { max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; overflow: hidden; border: none !important; }
+
+        .settings-table { width: 100%; border-collapse: collapse; }
+        .settings-table td { padding: 8px; vertical-align: middle; }
+        .settings-table td:first-child { font-weight: 600; color: var(--text-main); width: 35%; }
+
+        select, input[type="number"] { padding: 8px 12px; background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--text-muted); border-radius: 6px; outline: none; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; }
+
+        /* --- LAMPU COUNTDOWN --- */
+        .countdown-box { 
+            display: none; 
+            background: rgba(11, 15, 25, 0.95); 
+            border: 3px solid #38bdf8; 
+            border-radius: 12px; 
+            padding: 15px 25px; 
+            align-items: center; 
+            gap: 20px; 
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        }
+        .lights { display: flex; gap: 10px; }
+        .light { width: 30px; height: 30px; border-radius: 50%; background-color: #222; transition: background-color 0.2s, box-shadow 0.2s; }
+        .light-red-active { background-color: #ef4444 !important; box-shadow: 0 0 15px #ef4444; }
+        .light-yellow-active { background-color: #eab308 !important; box-shadow: 0 0 15px #eab308; }
+        .light-green-active { background-color: #22c55e !important; box-shadow: 0 0 15px #22c55e; }
+        .countdown-text { color: #fff; font-size: 1.2rem; font-weight: bold; }
+        .countdown-number { color: #fff; font-size: 1.8rem; font-weight: bold; font-family: monospace; }
+
+        .live-timer-banner { display: none; background: linear-gradient(90deg, #16223f, #0b0f19); border: 2px solid var(--accent-color); border-radius: 8px; padding: 10px 25px; color: #fff; font-size: 1.2rem; font-weight: bold; font-family: monospace; text-align: center; margin: 10px auto; width: fit-content; box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+
+        /* --- PODIUM --- */
+        .live-podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 20px; height: 250px; background-color: rgba(19, 28, 46, 0.5); border: 2px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 15px; width: 100%; max-width: 850px; box-sizing: border-box; margin-bottom: 20px; transition: max-height 0.4s ease-in-out, padding 0.4s, opacity 0.3s; overflow: hidden; opacity: 1; }
+        .live-podium-container.podium-collapsed { height: 0 !important; max-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin-bottom: 0 !important; border: none !important; opacity: 0; pointer-events: none; }
+        .podium-slot { display: flex; flex-direction: column; align-items: center; width: 150px; border-radius: 8px 8px 0 0; font-weight: bold; color: #000; justify-content: flex-end; padding-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; position: relative; }
+        .podium-slot .car-parked { font-size: 45px; transform: scaleX(-1); min-height: 55px; margin-bottom: 5px; line-height: 1; text-shadow: 2px 8px 6px rgba(0,0,0,0.4); }
+        
+        .podium-slot .meta-txt { font-size: 0.8rem; line-height: 1.3; color: #fff; background: rgba(15, 23, 42, 0.9); padding: 5px 8px; border-radius: 6px; margin-bottom: 8px; width: 90%; box-sizing: border-box; word-break: break-all; white-space: pre-line; border: 1px solid rgba(255,255,255,0.15); }
+        .podium-slot.first { height: 160px; background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+        .podium-slot.second { height: 125px; background: linear-gradient(135deg, #e2e8f0, #94a3b8); }
+        .podium-slot.third { height: 95px; background: linear-gradient(135deg, #b45309, #78350f); }
+
+        /* --- AREA PENONTON / SPECTATORS GARAGE --- */
+        .spectator-zone-container {
+            width: 100%;
+            max-width: 850px;
+            background-color: #0d1524;
+            border: 2px dashed #334155;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .spectator-zone-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .spectator-cars-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            min-height: 50px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .spectator-car-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 1.8rem;
+            position: relative;
+            animation: spectatorFloat 3s ease-in-out infinite alternate;
+        }
+        .spectator-car-node span {
+            font-size: 0.7rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+        @keyframes spectatorFloat {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-4px); }
+        }
+
+        /* --- LINTASAN BALAP --- */
+        .track-container { background-color: var(--card-bg); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 20px; width: 100%; max-width: 850px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); margin-bottom: 20px; box-sizing: border-box; transition: transform 0.1s ease; }
+        .track-lanes-wrapper { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        .track-lane { height: 110px; border-bottom: 2px dashed #243454; position: relative; display: flex; align-items: center; justify-content: space-between; padding-right: 15px; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.1); }
+        .lane-info { position: absolute; left: 10px; top: 5px; font-size: 0.85rem; color: var(--text-muted); z-index: 2; display: flex; gap: 15px; align-items: center; }
+        .lane-info .wpm-counter { color: var(--accent-color); font-weight: bold; }
+        .kick-btn { background: none; border: none; color: var(--wrong-color); font-weight: bold; cursor: pointer; padding: 0 5px; font-size: 0.9rem; margin-left: 5px; transition: transform 0.1s; }
+        .kick-btn:hover { transform: scale(1.2); }
+        
+        /* Badge Status Ready */
+        .ready-badge { padding: 2px 6px; font-size: 0.75rem; font-weight: bold; border-radius: 4px; margin-left: 8px; text-transform: uppercase; }
+        .badge-is-ready { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid #4ade80; }
+        .badge-not-ready { background-color: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
+
+        .car-node-wrapper { position: absolute; left: 0; bottom: 12px; transition: left 0.1s linear; display: flex; flex-direction: column; align-items: center; width: 100px; z-index: 5; }
+        
+        /* Efek Kedalaman Mobil (3D Shadow Layers) */
+        .car { 
+            font-size: 45px; 
+            transform: scaleX(-1); 
+            width: 100%; 
+            text-align: center; 
+            line-height: 1;
+            filter: drop-shadow(2px 5px 2px rgba(0, 0, 0, 0.6)) drop-shadow(4px 12px 6px rgba(0, 0, 0, 0.3));
+            transition: transform 0.1s ease;
+        }
+        
+        .car-bubble { 
+            position: absolute; 
+            bottom: 52px; 
+            background: #f8fafc; 
+            color: #0f172a; 
+            padding: 6px 12px; 
+            border-radius: 10px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+            border: 2px solid var(--accent-color); 
+            opacity: 0; 
+            transform: scale(0.7) translateY(10px); 
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            pointer-events: none; 
+            width: 120px; 
+            text-align: center;
+            word-wrap: break-word;
+            z-index: 999;
+        }
+        .car-bubble.active { opacity: 1; transform: scale(1) translateY(0); }
+        .car-bubble::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border-width: 6px 6px 0; border-style: solid; border-color: #f8fafc transparent; display: block; width: 0; }
+
+        .status-display { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 10px; }
+        .room-badge { background-color: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-family: monospace; }
+
+        /* --- DISPLAY KATA (10FastFingers Style) --- */
+        .text-display { 
+            background-color: #070d19; 
+            border-radius: 8px; 
+            padding: 20px 25px; 
+            font-size: 1.55rem; 
+            line-height: 2.1; 
+            margin-bottom: 5px; 
+            text-align: left; 
+            overflow: hidden; 
+            position: relative; 
+            width: 100%;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .words-line-container { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px; 
+            width: 100%;
+        }
+        .word { display: inline-block; padding: 0px 5px; margin: 2px 3px; border-radius: 4px; color: #748ba7; transition: all 0.05s ease; }
+        .word.current { color: #ffffff !important; background-color: #1e3a5f !important; border-radius: 4px; box-shadow: 0 0 0 2px #38bdf8; }
+        .word.current.error { background-color: #5c1d24 !important; color: #fecaca !important; box-shadow: 0 0 0 2px #f87171; }
+        .word.completed { color: #4ade80; font-weight: 500; }
+        .word.completed-wrong { color: #f87171; text-decoration: line-through; }
+        .word .letter { display: inline-block; padding: 0; margin: 0; }
+        .word .letter.char-wrong { background-color: #ef4444 !important; color: #fff !important; border-radius: 2px; }
+
+        .action-area { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+        .input-container { display: flex; gap: 12px; align-items: center; }
+        #input-box { flex: 1; padding: 15px 20px; font-size: 1.3rem; background-color: var(--card-bg); color: var(--text-main); border: 2px solid rgba(56, 189, 248, 0.3); border-radius: 8px; outline: none; }
+        #input-box:focus { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+        #input-box.input-error { border-color: var(--wrong-color) !important; background-color: rgba(248, 113, 113, 0.05); box-shadow: 0 0 10px rgba(248, 113, 113, 0.3); }
+
+        .btn { padding: 12px 20px; font-size: 0.95rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background-color: var(--accent-color); color: #0b0f19; }
+        .btn-success { background-color: var(--correct-color); color: #0b0f19; }
+        .btn-danger { background-color: var(--wrong-color); color: #fff; }
+        .btn-secondary { background-color: #243454; color: #fff; border: 1px solid rgba(56, 189, 248, 0.2); }
+
+        .role-badge { padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
+        .role-join { background-color: rgba(74, 222, 128, 0.2); color: var(--correct-color); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 10, 18, 0.95); display: flex; justify-content: center; align-items: center; z-index: 8000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .tournament-results { position: relative; background-color: var(--card-bg); border: 1px solid rgba(56, 189, 248, 0.3); padding: 30px; border-radius: 16px; width: 90%; max-width: 650px; text-align: center; box-shadow: 0 8px 32px var(--container-glow); }
+        
+        /* Tombol Developer Sesuai Kotak Merah image_56c10a.png */
+        .dev-corner-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 0 6px #ef4444;
+        }
+
+        .leaderboard-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: left; }
+        .leaderboard-table th, .leaderboard-table td { padding: 10px; border-bottom: 1px solid rgba(56,189,248,0.1); }
+
+        .garage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; margin-top: 20px; max-height: 320px; overflow-y: auto; padding: 10px; }
+        .garage-item { background: #070a12; border: 2px solid #243454; border-radius: 10px; padding: 15px 5px; cursor: pointer; text-align: center; transition: all 0.2s ease; }
+        .garage-item:hover { border-color: var(--accent-color); transform: translateY(-3px); background: #131c2e; }
+        .garage-item.selected-car { border-color: var(--correct-color); background: rgba(74, 222, 128, 0.1); }
+        .garage-item .car-img { font-size: 2.2rem; margin-bottom: 5px; display: block; line-height: 1; }
+        .garage-item .car-label { font-size: 0.8rem; font-weight: bold; color: var(--text-main); }
+
+        .mute-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 0 5px; color: var(--accent-color); }
+
+        @keyframes screenShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+        .shake-active { animation: screenShake 0.15s cubic-bezier(.36,.07,.19,.97) both; }
+        
+        .unready-txt-alert { color: #f87171 !important; font-weight: bold; text-shadow: 0 0 10px rgba(248,113,113,0.3); line-height: 1.5; }
+        
+        .dev-panel-box {
+            background: #1e1b29;
+            border: 1px solid #ef4444;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
 
@@ -68,6 +523,7 @@
     </div>
 
     <div id="main-arena" style="display: none; width: 100%; max-width: 850px;">
+        
         <div class="accordion-wrapper">
             <div class="accordion-header">
                 <div class="accordion-title">
@@ -222,15 +678,11 @@
 
         <div class="track-container" id="race-track-card">
             <div class="status-display">
-                <div>Status: <span id="role-text" class="role-badge role-join">PLAYER</span></div>
-                <div id="room-id-badge" style="display:none;">ROOM: <span id="room-code-txt" class="room-badge">-</span></div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="copyRoomShareLink()">Salin Link 🔗</button>
-                    <button class="btn btn-danger" style="padding: 6px 14px; font-size: 0.85rem;" onclick="leaveRoomAction()">Keluar Kamar 🚪</button>
-                </div>
+                <div>Kamar: <span id="room-id-display" class="room-badge">OFFLINE</span></div>
+                <div>Status Kendaraan Anda: <span id="player-role-display" class="role-badge role-join">Pembalap Utama</span></div>
             </div>
 
-            <div class="track-lanes-wrapper" id="track-lanes-arena"></div>
+            <div class="track-lanes-wrapper" id="track-lanes-container"></div>
         </div>
 
         <div class="text-display" id="text-display-box">
@@ -239,12 +691,127 @@
 
         <div class="action-area">
             <div class="input-container">
-                <input type="text" id="input-box" placeholder="Ketik kata di sini ketika balapan dimulai..." disabled oninput="handleInputProcess()">
-                <button id="ready-start-btn" class="btn btn-success" style="font-size:1.2rem; padding:15px 30px;" onclick="readyOrStartClickAction()">SIAP! 🏁</button>
+                <input type="text" id="input-box" placeholder="Ketik kata saat ini disini..." disabled autocomplete="off">
+                <button id="ready-race-btn" class="btn btn-primary" style="font-size:1.1rem; padding:15px 30px;" onclick="toggleReadyState()">SIAP BALAPAN 🚩</button>
+                <button id="start-race-btn" class="btn btn-success" style="display: none; font-size:1.1rem; padding:15px 30px;" onclick="hostTriggerStartGame()">MULAI BALAPAN 🏎️</button>
             </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="share-room-link-btn" class="btn btn-secondary" style="display: none;" onclick="copyRoomShareLink()">📋 Salin Link Kamar Mabar</button>
+                <button class="btn btn-danger" onclick="leaveRoomAction()">Keluar Sirkuit</button>
+                <button id="view-scores-btn" class="btn btn-secondary" style="display: none;" onclick="openScoresModal()">🏆 Lihat Papan Skor Akhir</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="countdown-box" id="countdown-widget">
+        <div class="lights">
+            <div class="light" id="light-r"></div>
+            <div class="light" id="light-y"></div>
+            <div class="light" id="light-g"></div>
+        </div>
+        <div class="countdown-text" id="countdown-status-label">BERSIAP...</div>
+        <div class="countdown-number" id="countdown-timer-value">3</div>
+    </div>
+
+    <div class="modal-overlay" id="garage-modal-view">
+        <div class="tournament-results" style="max-width: 500px;">
+            <h3 style="color: var(--accent-color); margin-top: 0;">🏎️ Garasi Kendaraan Utama 🏎️</h3>
+            <p>Pilih bodi mobil balap andalan lo sekarang:</p>
+            <div class="garage-grid">
+                <div class="garage-item selected-car" id="car-1" onclick="selectCarFromGarageMenu('🚗', 'car-1')">
+                    <span class="car-img">🚗</span><span class="car-label">Sedan Merah</span>
+                </div>
+                <div class="garage-item" id="car-2" onclick="selectCarFromGarageMenu('🏎️', 'car-2')">
+                    <span class="car-img">🏎️</span><span class="car-label">Mobil F1</span>
+                </div>
+                <div class="garage-item" id="car-3" onclick="selectCarFromGarageMenu('🚓', 'car-3')">
+                    <span class="car-img">🚓</span><span class="car-label">Mobil Polisi</span>
+                </div>
+                <div class="garage-item" id="car-4" onclick="selectCarFromGarageMenu('🚀', 'car-4')">
+                    <span class="car-img">🚀</span><span class="car-label">Roket</span>
+                </div>
+                <div class="garage-item" id="car-5" onclick="selectCarFromGarageMenu('🛸', 'car-5')">
+                    <span class="car-img">🛸</span><span class="car-label">UFO</span>
+                </div>
+                <div class="garage-item" id="car-6" onclick="selectCarFromGarageMenu('🛹', 'car-6')">
+                    <span class="car-img">🛹</span><span class="car-label">Skateboard</span>
+                </div>
+                <div class="garage-item" id="car-7" onclick="selectCarFromGarageMenu('🛼', 'car-7')">
+                    <span class="car-img">🛼</span><span class="car-label">Sepatu Roda</span>
+                </div>
+            </div>
+            <br>
+            <button class="btn btn-primary" style="width: 100%;" onclick="closeGarageModal()">Simpan Pilihan Kendaraan</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <div class="modal-overlay" id="results-modal">
+        <div class="tournament-results">
+            <h2 style="color: var(--accent-color); margin-top: 0; font-size: 2rem;">🏁 HASIL AKHIR BALAPAN 🏁</h2>
+            
+            <p id="unready-list-warning-container" class="unready-txt-alert" style="display:none;"></p>
+            
+            <table class="leaderboard-table">
+                <thead>
+                    <tr style="color: var(--accent-color); border-bottom: 2px solid var(--accent-color);">
+                        <th>Posisi</th>
+                        <th>Nickname</th>
+                        <th>Kecepatan (WPM)</th>
+                        <th>Akurasi Ketik</th>
+                        <th>Status Balap</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-rows-target"></tbody>
+            </table>
+            <br>
+            <button class="btn btn-danger" style="padding: 10px 25px;" onclick="closeModalOnly()">Tutup Papan Skor</button>
+        </div>
+    </div>
+
+    <audio id="sfx-beep" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav" preload="auto"></audio>
+    <audio id="sfx-go" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav" preload="auto"></audio>
+    <audio id="sfx-msg" src="https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav" preload="auto"></audio>
+
+    <script src="chat.js"></script>
+    <script src="ui-utils.js"></script>
+    <script src="game-core.js"></script>
+    <script src="network.js"></script>
+
+    <script>
+        // Logika Inisialisasi Utama di Sini Menjamin Tombol Menu Lobby Bekerja Normal
+        function copyRoomShareLink() {
+            const dummy = document.createElement('input'); 
+            dummy.value = window.location.origin + "?room=" + currentOnlineRoomId;
+            document.body.appendChild(dummy); 
+            dummy.select(); 
+            document.execCommand('copy'); 
+            document.body.removeChild(dummy);
+            alert("Link Kamar Mabar berhasil disalin!");
+        }
+        
+        function leaveRoomAction() { 
+            window.location.reload(); 
+        }
+        
+        function openScoresModal() { 
+            document.getElementById('results-modal').classList.add('active'); 
+        }
+        
+        function closeModalOnly() { 
+            document.getElementById('results-modal').classList.remove('active'); 
+        }
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search); 
+            const rParam = urlParams.get('room');
+            if(rParam) {
+                urlRoomCode = rParam.toUpperCase();
+                document.getElementById('lobby-panel').style.display = 'none';
+                document.getElementById('sharelink-join-modal').classList.add('active');
+            }
+        }
+    </script>
 </body>
 </html>
